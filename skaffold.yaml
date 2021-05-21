@@ -24,8 +24,8 @@ build:
     context: src/emailservice
   - image: productcatalogservice
     context: src/productcatalogservice
-  - image: recommendationservice
-    context: src/recommendationservice
+  # - image: recommendationservice
+  #   context: src/recommendationservice
   - image: shippingservice
     context: src/shippingservice
   - image: checkoutservice
@@ -49,7 +49,18 @@ build:
 deploy:
   kubectl:
     manifests:
-    - ./kubernetes-manifests/**.yaml
+    - ./kubernetes-manifests/emailservice.yaml
+    - ./kubernetes-manifests/productcatalogservice.yaml
+    # - ./kubernetes-manifests/recommendationservice.yaml
+    - ./kubernetes-manifests/shippingservice.yaml
+    - ./kubernetes-manifests/checkoutservice.yaml
+    - ./kubernetes-manifests/paymentservice.yaml
+    - ./kubernetes-manifests/currencyservice.yaml
+    - ./kubernetes-manifests/cartservice.yaml
+    - ./kubernetes-manifests/frontend.yaml
+    - ./kubernetes-manifests/loadgenerator.yaml
+    - ./kubernetes-manifests/adservice.yaml
+    - ./kubernetes-manifests/redis.yaml
 profiles:
 # "gcb" profile allows building and pushing the images
 # on Google Container Builder without requiring docker
