@@ -117,16 +117,24 @@ func main() {
 	mustMapEnv(&svc.productCatalogSvcAddr, "PRODUCT_CATALOG_SERVICE_ADDR")
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
 	mustMapEnv(&svc.cartSvcAddr, "CART_SERVICE_ADDR")
-	mustMapEnv(&svc.recommendationSvcAddr, "RECOMMENDATION_SERVICE_ADDR")
+	if os.Getenv("RECOMMENDATION_SVC_DISABLED") == "" {
+		mustMapEnv(&svc.recommendationSvcAddr, "RECOMMENDATION_SERVICE_ADDR")
+	}
 	mustMapEnv(&svc.checkoutSvcAddr, "CHECKOUT_SERVICE_ADDR")
-	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
+	if os.Getenv("SHIPPING_SVC_DISABLED") == "" {
+		mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
+	}
 	mustMapEnv(&svc.adSvcAddr, "AD_SERVICE_ADDR")
 
 	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr)
 	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr)
 	mustConnGRPC(ctx, &svc.cartSvcConn, svc.cartSvcAddr)
-	mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr)
-	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr)
+	if os.Getenv("RECOMMENDATION_SVC_DISABLED") == "" {
+		mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr)
+	}
+	if os.Getenv("SHIPPING_SVC_DISABLED") == "" {
+		mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr)
+	}
 	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr)
 	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
 

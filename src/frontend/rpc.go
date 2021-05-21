@@ -16,9 +16,11 @@ package main
 
 import (
 	"context"
+	"os"
 	"time"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto"
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 )
@@ -84,11 +86,26 @@ func (fe *frontendServer) convertCurrency(ctx context.Context, money *pb.Money, 
 			ToCode: currency})
 }
 
-func (fe *frontendServer) getShippingQuote(ctx context.Context, items []*pb.CartItem, currency string) (*pb.Money, error) {
-	quote, err := pb.NewShippingServiceClient(fe.shippingSvcConn).GetQuote(ctx,
-		&pb.GetQuoteRequest{
-			Address: nil,
-			Items:   items})
+func (fe *frontendServer) getShippingQuote(log logrus.FieldLogger, ctx context.Context, items []*pb.CartItem, currency string) (*pb.Money, error) {
+
+	var quote *pb.GetQuoteResponse
+	var err error
+
+	if os.Getenv("SHIPPING_SVC_DISABLED") != "" {
+		log.Info("Shipping service disabled. Mocking call, always 5.00 USD shipping quote.")
+		quote, err = &pb.GetQuoteResponse{
+			CostUsd: &pb.Money{
+				CurrencyCode: "USD",
+				Units:        int64(5),
+				Nanos:        int32(0)},
+		}, error(nil)
+	} else {
+		quote, err = pb.NewShippingServiceClient(fe.shippingSvcConn).GetQuote(ctx,
+			&pb.GetQuoteRequest{
+				Address: nil,
+				Items:   items})
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +113,20 @@ func (fe *frontendServer) getShippingQuote(ctx context.Context, items []*pb.Cart
 	return localized, errors.Wrap(err, "failed to convert currency for shipping cost")
 }
 
-func (fe *frontendServer) getRecommendations(ctx context.Context, userID string, productIDs []string) ([]*pb.Product, error) {
-	resp, err := pb.NewRecommendationServiceClient(fe.recommendationSvcConn).ListRecommendations(ctx,
-		&pb.ListRecommendationsRequest{UserId: userID, ProductIds: productIDs})
+func (fe *frontendServer) getRecommendations(log logrus.FieldLogger, ctx context.Context, userID string, productIDs []string) ([]*pb.Product, error) {
+
+	var resp *pb.ListRecommendationsResponse
+	var err error
+
+	if os.Getenv("RECOMMENDATION_SVC_DISABLED") != "" {
+		log.Info("Recommendation service disabled. Mocking call, always recommending typewriter.")
+		resp, err = &pb.ListRecommendationsResponse{ProductIds: []string{"OLJCESPC7Z"}}, error(nil)
+
+	} else {
+		resp, err = pb.NewRecommendationServiceClient(fe.recommendationSvcConn).ListRecommendations(ctx,
+			&pb.ListRecommendationsRequest{UserId: userID, ProductIds: productIDs})
+	}
+
 	if err != nil {
 		return nil, err
 	}
