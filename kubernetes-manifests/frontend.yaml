@@ -78,6 +78,8 @@ spec:
           #   value: "jaeger-collector:14268"
           - name: RECOMMENDATION_SVC_DISABLED
             value: "1"
+          - name: SHIPPING_SVC_DISABLED
+            value: "1"
           resources:
             requests:
               cpu: 100m

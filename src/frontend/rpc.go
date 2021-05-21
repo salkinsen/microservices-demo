@@ -86,11 +86,26 @@ func (fe *frontendServer) convertCurrency(ctx context.Context, money *pb.Money, 
 			ToCode: currency})
 }
 
-func (fe *frontendServer) getShippingQuote(ctx context.Context, items []*pb.CartItem, currency string) (*pb.Money, error) {
-	quote, err := pb.NewShippingServiceClient(fe.shippingSvcConn).GetQuote(ctx,
-		&pb.GetQuoteRequest{
-			Address: nil,
-			Items:   items})
+func (fe *frontendServer) getShippingQuote(log logrus.FieldLogger, ctx context.Context, items []*pb.CartItem, currency string) (*pb.Money, error) {
+
+	var quote *pb.GetQuoteResponse
+	var err error
+
+	if os.Getenv("SHIPPING_SVC_DISABLED") != "" {
+		log.Info("Shipping service disabled. Mocking call, always 5.00 USD shipping quote.")
+		quote, err = &pb.GetQuoteResponse{
+			CostUsd: &pb.Money{
+				CurrencyCode: "USD",
+				Units:        int64(5),
+				Nanos:        int32(0)},
+		}, error(nil)
+	} else {
+		quote, err = pb.NewShippingServiceClient(fe.shippingSvcConn).GetQuote(ctx,
+			&pb.GetQuoteRequest{
+				Address: nil,
+				Items:   items})
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +117,6 @@ func (fe *frontendServer) getRecommendations(log logrus.FieldLogger, ctx context
 
 	var resp *pb.ListRecommendationsResponse
 	var err error
-
-	log.Info("RECOMMENDATION_SVC_DISABLED: <" + os.Getenv("RECOMMENDATION_SVC_DISABLED") + ">")
 
 	if os.Getenv("RECOMMENDATION_SVC_DISABLED") != "" {
 		log.Info("Recommendation service disabled. Mocking call, always recommending typewriter.")
