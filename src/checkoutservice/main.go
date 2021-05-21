@@ -95,7 +95,9 @@ func main() {
 	mustMapEnv(&svc.productCatalogSvcAddr, "PRODUCT_CATALOG_SERVICE_ADDR")
 	mustMapEnv(&svc.cartSvcAddr, "CART_SERVICE_ADDR")
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
-	mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
+	if os.Getenv("EMAIL_SVC_DISABLED") == "" {
+		mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
+	}
 	mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
 
 	log.Infof("service config: %+v", svc)
@@ -415,6 +417,11 @@ func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, pay
 }
 
 func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email string, order *pb.OrderResult) error {
+	if os.Getenv("EMAIL_SVC_DISABLED") != "" {
+		log.Info("Email Service disabled. Skipping call.")
+		return nil
+	}
+
 	conn, err := grpc.DialContext(ctx, cs.emailSvcAddr, grpc.WithInsecure(), grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
 	if err != nil {
 		return fmt.Errorf("failed to connect email service: %+v", err)

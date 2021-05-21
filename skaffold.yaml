@@ -20,8 +20,8 @@ build:
   # must provide a "default repo" using one of the methods described
   # here:
   # https://skaffold.dev/docs/concepts/#image-repository-handling
-  - image: emailservice
-    context: src/emailservice
+  # - image: emailservice
+  #   context: src/emailservice
   - image: productcatalogservice
     context: src/productcatalogservice
   # - image: recommendationservice
@@ -49,7 +49,7 @@ build:
 deploy:
   kubectl:
     manifests:
-    - ./kubernetes-manifests/emailservice.yaml
+    # - ./kubernetes-manifests/emailservice.yaml
     - ./kubernetes-manifests/productcatalogservice.yaml
     # - ./kubernetes-manifests/recommendationservice.yaml
     # - ./kubernetes-manifests/shippingservice.yaml
