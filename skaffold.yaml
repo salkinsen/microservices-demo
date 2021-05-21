@@ -30,8 +30,8 @@ build:
   #   context: src/shippingservice
   - image: checkoutservice
     context: src/checkoutservice
-  - image: paymentservice
-    context: src/paymentservice
+  # - image: paymentservice
+  #   context: src/paymentservice
   - image: currencyservice
     context: src/currencyservice
   - image: cartservice
@@ -54,7 +54,7 @@ deploy:
     # - ./kubernetes-manifests/recommendationservice.yaml
     # - ./kubernetes-manifests/shippingservice.yaml
     - ./kubernetes-manifests/checkoutservice.yaml
-    - ./kubernetes-manifests/paymentservice.yaml
+    # - ./kubernetes-manifests/paymentservice.yaml
     - ./kubernetes-manifests/currencyservice.yaml
     - ./kubernetes-manifests/cartservice.yaml
     - ./kubernetes-manifests/frontend.yaml

@@ -64,6 +64,8 @@ spec:
             value: "1"
           - name: EMAIL_SVC_DISABLED
             value: "1"
+          - name: PAYMENT_SVC_DISABLED
+            value: "1"
           resources:
             requests:
               cpu: 100m

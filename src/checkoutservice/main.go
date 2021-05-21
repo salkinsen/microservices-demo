@@ -98,7 +98,9 @@ func main() {
 	if os.Getenv("EMAIL_SVC_DISABLED") == "" {
 		mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
 	}
-	mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
+	if os.Getenv("PAYMENT_SVC_DISABLED") == "" {
+		mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
+	}
 
 	log.Infof("service config: %+v", svc)
 
@@ -401,6 +403,11 @@ func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, 
 }
 
 func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
+	if os.Getenv("PAYMENT_SVC_DISABLED") != "" {
+		log.Info("Payment service disabled. Mocking call, always return 'Mock_Transaction_ID'")
+		return "Mock_Transaction_ID", nil
+	}
+
 	conn, err := grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure(), grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect payment service: %+v", err)
