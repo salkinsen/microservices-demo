@@ -26,8 +26,8 @@ build:
     context: src/productcatalogservice
   # - image: recommendationservice
   #   context: src/recommendationservice
-  - image: shippingservice
-    context: src/shippingservice
+  # - image: shippingservice
+  #   context: src/shippingservice
   - image: checkoutservice
     context: src/checkoutservice
   - image: paymentservice
@@ -52,7 +52,7 @@ deploy:
     - ./kubernetes-manifests/emailservice.yaml
     - ./kubernetes-manifests/productcatalogservice.yaml
     # - ./kubernetes-manifests/recommendationservice.yaml
-    - ./kubernetes-manifests/shippingservice.yaml
+    # - ./kubernetes-manifests/shippingservice.yaml
     - ./kubernetes-manifests/checkoutservice.yaml
     - ./kubernetes-manifests/paymentservice.yaml
     - ./kubernetes-manifests/currencyservice.yaml

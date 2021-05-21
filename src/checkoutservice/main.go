@@ -89,7 +89,9 @@ func main() {
 	}
 
 	svc := new(checkoutService)
-	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
+	if os.Getenv("SHIPPING_SVC_DISABLED") == "" {
+		mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
+	}
 	mustMapEnv(&svc.productCatalogSvcAddr, "PRODUCT_CATALOG_SERVICE_ADDR")
 	mustMapEnv(&svc.cartSvcAddr, "CART_SERVICE_ADDR")
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
@@ -299,6 +301,17 @@ func (cs *checkoutService) prepareOrderItemsAndShippingQuoteFromCart(ctx context
 }
 
 func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Address, items []*pb.CartItem) (*pb.Money, error) {
+
+	if os.Getenv("SHIPPING_SVC_DISABLED") != "" {
+		log.Info("Shipping service disabled. Mocking call, always 5.00 USD shipping quote.")
+
+		return &pb.Money{
+				CurrencyCode: "USD",
+				Units:        int64(5),
+				Nanos:        int32(0)},
+			error(nil)
+	}
+
 	conn, err := grpc.DialContext(ctx, cs.shippingSvcAddr,
 		grpc.WithInsecure(),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
@@ -414,6 +427,12 @@ func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email stri
 }
 
 func (cs *checkoutService) shipOrder(ctx context.Context, address *pb.Address, items []*pb.CartItem) (string, error) {
+
+	if os.Getenv("SHIPPING_SVC_DISABLED") != "" {
+		log.Info("Shipping service disabled. Mocking call, always return 'Mock_Tracking_ID'")
+		return "Mock_Tracking_ID", nil
+	}
+
 	conn, err := grpc.DialContext(ctx, cs.shippingSvcAddr, grpc.WithInsecure(), grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect email service: %+v", err)
