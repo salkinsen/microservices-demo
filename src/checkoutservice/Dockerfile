@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.15-alpine as builder
+FROM golang:1.15-alpine3.12 as builder
 RUN apk add --no-cache ca-certificates git
 WORKDIR /src
 
@@ -23,7 +23,7 @@ RUN go mod download
 COPY . .
 RUN go build -gcflags='-N -l' -o /checkoutservice .
 
-FROM alpine as release
+FROM alpine:3.12 as release
 RUN apk add --no-cache ca-certificates
 RUN GRPC_HEALTH_PROBE_VERSION=v0.3.6 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
