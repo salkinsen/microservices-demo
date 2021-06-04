@@ -26,6 +26,15 @@ spec:
         app: recommendationservice
     spec:
       serviceAccountName: default
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: layer
+                operator: In
+                values:
+                - meta-monitoring
       terminationGracePeriodSeconds: 5
       containers:
       - name: server

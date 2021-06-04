@@ -24,8 +24,18 @@ spec:
     metadata:
       labels:
         app: checkoutservice
+        layer: ms-shop-observed
     spec:
       serviceAccountName: default
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: layer
+                operator: In
+                values:
+                - meta-monitoring
       containers:
         - name: server
           image: checkoutservice

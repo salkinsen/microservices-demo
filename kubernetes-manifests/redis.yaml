@@ -25,6 +25,15 @@ spec:
       labels:
         app: redis-cart
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: layer
+                operator: In
+                values:
+                - meta-monitoring
       containers:
       - name: redis
         image: redis:alpine

@@ -24,10 +24,20 @@ spec:
     metadata:
       labels:
         app: loadgenerator
+        layer: ms-shop-observed
       annotations:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
       serviceAccountName: default
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: layer
+                operator: In
+                values:
+                - meta-monitoring
       terminationGracePeriodSeconds: 5
       restartPolicy: Always
       containers:
