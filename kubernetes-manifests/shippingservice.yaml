@@ -32,7 +32,7 @@ spec:
             nodeSelectorTerms:
             - matchExpressions:
               - key: layer
-                operator: In
+                operator: NotIn
                 values:
                 - meta-monitoring
       containers:

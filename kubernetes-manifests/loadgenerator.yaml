@@ -35,7 +35,7 @@ spec:
             nodeSelectorTerms:
             - matchExpressions:
               - key: layer
-                operator: In
+                operator: NotIn
                 values:
                 - meta-monitoring
       terminationGracePeriodSeconds: 5
