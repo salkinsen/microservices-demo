@@ -9,6 +9,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using cartservice.cartstore;
 using cartservice.services;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
 
 namespace cartservice
 {
@@ -45,6 +48,34 @@ namespace cartservice
             services.AddSingleton<ICartStore>(cartStore);
 
             services.AddGrpc();
+
+            // Adding the OtlpExporter creates a GrpcChannel.
+            // This switch must be set before creating a GrpcChannel/HttpClient when calling an insecure gRPC service.
+            // See: https://docs.microsoft.com/aspnet/core/grpc/troubleshoot#call-insecure-grpc-services-with-net-core-client
+            //AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
+            services.AddOpenTelemetryTracing(builder =>
+                {
+                    builder.AddAspNetCoreInstrumentation()
+                        // .AddGrpcClientInstrumentation()
+                        // .AddHttpClientInstrumentation()
+                        .AddConsoleExporter()
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
+                        .AddJaegerExporter(options =>
+                        {
+                            options.AgentHost = Configuration["JAEGER_SERVICE_ADDR"].Split(':')[0];
+                            options.AgentPort = Convert.ToInt32(Configuration["JAEGER_SERVICE_ADDR"].Split(':')[1]);
+                        });
+                    Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
+                    if (cartStore is RedisCartStore redisCartStore)
+                    {
+                        builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
+                        Console.WriteLine($"Adding redis instrumentation to trace builder.");
+                    }
+                }
+            );
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
