@@ -70,12 +70,12 @@ spec:
           #   value: "1"
           - name: JAEGER_SERVICE_ADDR
             value: "jaeger-collector:14268"
-          - name: SHIPPING_SVC_DISABLED
-            value: "1"
-          - name: EMAIL_SVC_DISABLED
-            value: "1"
-          - name: PAYMENT_SVC_DISABLED
-            value: "1"
+          # - name: SHIPPING_SVC_DISABLED
+          #   value: "1"
+          # - name: EMAIL_SVC_DISABLED
+          #   value: "1"
+          # - name: PAYMENT_SVC_DISABLED
+          #   value: "1"
           resources:
             requests:
               cpu: 100m
