@@ -41,6 +41,7 @@ spec:
       containers:
         - name: server
           image: frontend
+          imagePullPolicy: "IfNotPresent"
           ports:
           - containerPort: 8080
           readinessProbe:

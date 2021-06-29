@@ -37,6 +37,7 @@ spec:
       containers:
       - name: redis
         image: redis:alpine
+        imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 6379
         readinessProbe:

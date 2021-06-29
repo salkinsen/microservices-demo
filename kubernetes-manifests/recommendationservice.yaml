@@ -39,6 +39,7 @@ spec:
       containers:
       - name: server
         image: recommendationservice
+        imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 8080
         readinessProbe:

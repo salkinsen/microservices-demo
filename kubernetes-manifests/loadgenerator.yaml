@@ -43,6 +43,7 @@ spec:
       containers:
       - name: main
         image: loadgenerator
+        imagePullPolicy: "IfNotPresent"
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"

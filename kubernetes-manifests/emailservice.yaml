@@ -40,6 +40,7 @@ spec:
       containers:
       - name: server
         image: emailservice
+        imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 8080
         env:
