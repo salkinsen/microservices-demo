@@ -1,7 +1,6 @@
 #!/bin/bash
 # use -s flag to skip specific services
 
-#!/bin/bash
 services=( adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice shippingservice)
 
 usage() {
