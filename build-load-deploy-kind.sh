@@ -1,9 +1,6 @@
 #!/bin/bash
 # use -s flag to skip specific services
 
-#!/bin/bash
-# use -s flag to skip specific services
-
 ./build-images.sh "$@" 
 if [ $? -ne 0 ]; then
     echo "not all images could be build, aborting ..."

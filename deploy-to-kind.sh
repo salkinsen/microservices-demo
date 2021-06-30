@@ -1,6 +1,5 @@
 #!/bin/bash
 # use -s flag to skip specific services
-# sets pull policy to IfNotPresent
 
 . ./shared.sh
 
