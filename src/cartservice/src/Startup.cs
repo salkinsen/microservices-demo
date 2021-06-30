@@ -57,8 +57,8 @@ namespace cartservice
             services.AddOpenTelemetryTracing(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation()
-                        // .AddGrpcClientInstrumentation()
-                        // .AddHttpClientInstrumentation()
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
                         // .AddConsoleExporter()
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
