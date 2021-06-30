@@ -15,10 +15,15 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/uber/jaeger-client-go v2.21.1+incompatible // indirect
 	go.opencensus.io v0.21.0
+	go.opentelemetry.io/otel v1.0.0-RC1 // indirect
+	go.opentelemetry.io/otel/exporters/jaeger v1.0.0-RC1 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.0.0-RC1 // indirect
+	go.opentelemetry.io/otel/sdk v1.0.0-RC1 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
 	google.golang.org/api v0.7.1-0.20190709010654-aae1d1b89c27 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
 	google.golang.org/genproto v0.0.0-20190708153700-3bdd9d9f5532 // indirect
 	google.golang.org/grpc v1.22.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

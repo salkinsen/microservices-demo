@@ -27,12 +27,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/b3"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+
+	"go.opentelemetry.io/otel"
+	// "go.opentelemetry.io/otel/attribute"
+	// "go.opentelemetry.io/otel/baggage"
+	// "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	// "go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -154,13 +157,81 @@ func main() {
 	var handler http.Handler = r
 	handler = &logHandler{log: log, next: handler} // add logging
 	handler = ensureSessionID(handler)             // add session ID
-	handler = &ochttp.Handler{                     // add opencensus instrumentation
-		Handler:     handler,
-		Propagation: &b3.HTTPFormat{}}
+	// handler = &ochttp.Handler{                     // add opencensus instrumentation
+	// 	Handler:     handler,
+	// 	Propagation: &b3.HTTPFormat{}}
 
 	log.Infof("starting server on " + addr + ":" + srvPort)
 	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
 }
+
+// the following tracerProvider-function has been taken (and adapted) from one of the official open-telemetry examples:
+// https://github.com/open-telemetry/opentelemetry-go/blob/main/example/jaeger/main.go
+
+// tracerProvider returns an OpenTelemetry TracerProvider configured to use
+// the Jaeger exporter that will send spans to the provided url. The returned
+// TracerProvider will also use a Resource configured with all the information
+// about the application.
+func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
+	// Create the Jaeger exporter
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	if err != nil {
+		return nil, err
+	}
+
+	// Since we're not specifying a sampler, every trace will be sampled, see:
+	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#WithSampler
+	tp := tracesdk.NewTracerProvider(
+		// Always be sure to batch in production.
+		tracesdk.WithBatcher(exp),
+		// Record information about this application in an Resource.
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("frontend"),
+		)),
+	)
+	return tp, nil
+}
+
+// code for the  following initOpenTelemetry-function has been taken (and adapted) from one of the official open-telemetry examples:
+// https://github.com/open-telemetry/opentelemetry-go/blob/main/example/jaeger/main.go
+
+func initOpenTelemetry(log logrus.FieldLogger) {
+
+	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
+	if svcAddr == "" {
+		log.Info("jaeger initialization disabled.")
+		return
+	}
+
+	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Register our TracerProvider as the global so any imported
+	// instrumentation in the future will default to using it.
+	otel.SetTracerProvider(tp)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Cleanly shutdown and flush telemetry when the application exits.
+	defer func(ctx context.Context) {
+		// Do not make the application hang when it is shutdown.
+		ctx, cancel = context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+		if err := tp.Shutdown(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}(ctx)
+
+	tr := tp.Tracer("frontend")
+
+	ctx, span := tr.Start(ctx, "root")
+	defer span.End()
+}
+
 
 func initJaegerTracing(log logrus.FieldLogger) {
 
@@ -169,6 +240,14 @@ func initJaegerTracing(log logrus.FieldLogger) {
 		log.Info("jaeger initialization disabled.")
 		return
 	}
+
+	tracer := otel.Tracer("frontend")
+
+	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
+
+	// set global tracer provider, so imported instrumentation will use it
+	otel.SetTracerProvider(tp)
+
 
 	// Register the Jaeger exporter to be able to retrieve
 	// the collected spans.
@@ -233,8 +312,9 @@ func initTracing(log logrus.FieldLogger) {
 	// trace.ProbabilitySampler set at the desired probability.
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
-	initJaegerTracing(log)
-	initStackdriverTracing(log)
+	initOpenTelemetry(log)
+	//initJaegerTracing(log)
+	// initStackdriverTracing(log)
 
 }
 
@@ -274,7 +354,9 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(grpctrace.UnaryClientInterceptor(global.TraceProvider().Tracer("frontend"))),
+		grpc.WithStreamInterceptor(grpctrace.StreamClientInterceptor(global.TraceProvider().Tracer("frontend"))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}
