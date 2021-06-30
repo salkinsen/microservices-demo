@@ -1,6 +1,6 @@
 #!/bin/bash
 
-services=( adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice recommendationservice shippingservice)
+services=( adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice)
 
 
 # exits if elem is not found in array
