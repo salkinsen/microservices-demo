@@ -21,21 +21,26 @@ import (
 	"os"
 	"time"
 
-	"cloud.google.com/go/profiler"
-	"contrib.go.opencensus.io/exporter/jaeger"
-	"contrib.go.opencensus.io/exporter/stackdriver"
+	// "cloud.google.com/go/profiler"
+	// ocjaeger "contrib.go.opencensus.io/exporter/jaeger"
+	// "contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	// "go.opentelemetry.io/otel/attribute"
 	// "go.opentelemetry.io/otel/baggage"
 	// "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	// "go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
+	// "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	// "go.opentelemetry.io/otel/instrumentation/grpctrace"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 const (
@@ -104,12 +109,12 @@ func main() {
 		log.Info("Tracing disabled.")
 	}
 
-	if os.Getenv("DISABLE_PROFILER") == "" {
-		log.Info("Profiling enabled.")
-		go initProfiling(log, "frontend", "1.0.0")
-	} else {
-		log.Info("Profiling disabled.")
-	}
+	// if os.Getenv("DISABLE_PROFILER") == "" {
+	// 	log.Info("Profiling enabled.")
+	// 	go initProfiling(log, "frontend", "1.0.0")
+	// } else {
+	// 	log.Info("Profiling disabled.")
+	// }
 
 	srvPort := port
 	if os.Getenv("PORT") != "" {
@@ -172,12 +177,15 @@ func main() {
 // the Jaeger exporter that will send spans to the provided url. The returned
 // TracerProvider will also use a Resource configured with all the information
 // about the application.
-func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
+func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvider, error) {
+
 	// Create the Jaeger exporter
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info("created jaeger exporter to collector at url: " + url)
 
 	// Since we're not specifying a sampler, every trace will be sampled, see:
 	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#WithSampler
@@ -204,7 +212,7 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 		return
 	}
 
-	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
+	tp, err := tracerProvider(fmt.Sprintf("http://%s/api/traces", svcAddr), log)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -233,84 +241,84 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 }
 
 
-func initJaegerTracing(log logrus.FieldLogger) {
+// func initJaegerTracing(log logrus.FieldLogger) {
 
-	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
-	if svcAddr == "" {
-		log.Info("jaeger initialization disabled.")
-		return
-	}
+// 	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
+// 	if svcAddr == "" {
+// 		log.Info("jaeger initialization disabled.")
+// 		return
+// 	}
 
-	tracer := otel.Tracer("frontend")
+// 	tracer := otel.Tracer("frontend")
 
-	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
+// 	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
 
-	// set global tracer provider, so imported instrumentation will use it
-	otel.SetTracerProvider(tp)
+// 	// set global tracer provider, so imported instrumentation will use it
+// 	otel.SetTracerProvider(tp)
 
 
-	// Register the Jaeger exporter to be able to retrieve
-	// the collected spans.
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint: fmt.Sprintf("http://%s", svcAddr),
-		Process: jaeger.Process{
-			ServiceName: "frontend",
-		},
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	trace.RegisterExporter(exporter)
-	log.Info("jaeger initialization completed.")
-}
+// 	// Register the Jaeger exporter to be able to retrieve
+// 	// the collected spans.
+// 	exporter, err := ocjaeger.NewExporter(jaeger.Options{
+// 		Endpoint: fmt.Sprintf("http://%s", svcAddr),
+// 		Process: ocjaeger.Process{
+// 			ServiceName: "frontend",
+// 		},
+// 	})
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	trace.RegisterExporter(exporter)
+// 	log.Info("jaeger initialization completed.")
+// }
 
-func initStats(log logrus.FieldLogger, exporter *stackdriver.Exporter) {
-	view.SetReportingPeriod(60 * time.Second)
-	view.RegisterExporter(exporter)
-	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
-		log.Warn("Error registering http default server views")
-	} else {
-		log.Info("Registered http default server views")
-	}
-	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
-		log.Warn("Error registering grpc default client views")
-	} else {
-		log.Info("Registered grpc default client views")
-	}
-}
+// func initStats(log logrus.FieldLogger, exporter *stackdriver.Exporter) {
+// 	view.SetReportingPeriod(60 * time.Second)
+// 	view.RegisterExporter(exporter)
+// 	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
+// 		log.Warn("Error registering http default server views")
+// 	} else {
+// 		log.Info("Registered http default server views")
+// 	}
+// 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
+// 		log.Warn("Error registering grpc default client views")
+// 	} else {
+// 		log.Info("Registered grpc default client views")
+// 	}
+// }
 
-func initStackdriverTracing(log logrus.FieldLogger) {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		log = log.WithField("retry", i)
-		exporter, err := stackdriver.NewExporter(stackdriver.Options{})
-		if err != nil {
-			// log.Warnf is used since there are multiple backends (stackdriver & jaeger)
-			// to store the traces. In production setup most likely you would use only one backend.
-			// In that case you should use log.Fatalf.
-			log.Warnf("failed to initialize Stackdriver exporter: %+v", err)
-		} else {
-			trace.RegisterExporter(exporter)
-			log.Info("registered Stackdriver tracing")
+// func initStackdriverTracing(log logrus.FieldLogger) {
+// 	// TODO(ahmetb) this method is duplicated in other microservices using Go
+// 	// since they are not sharing packages.
+// 	for i := 1; i <= 3; i++ {
+// 		log = log.WithField("retry", i)
+// 		exporter, err := stackdriver.NewExporter(stackdriver.Options{})
+// 		if err != nil {
+// 			// log.Warnf is used since there are multiple backends (stackdriver & jaeger)
+// 			// to store the traces. In production setup most likely you would use only one backend.
+// 			// In that case you should use log.Fatalf.
+// 			log.Warnf("failed to initialize Stackdriver exporter: %+v", err)
+// 		} else {
+// 			trace.RegisterExporter(exporter)
+// 			log.Info("registered Stackdriver tracing")
 
-			// Register the views to collect server stats.
-			initStats(log, exporter)
-			return
-		}
-		d := time.Second * 20 * time.Duration(i)
-		log.Debugf("sleeping %v to retry initializing Stackdriver exporter", d)
-		time.Sleep(d)
-	}
-	log.Warn("could not initialize Stackdriver exporter after retrying, giving up")
-}
+// 			// Register the views to collect server stats.
+// 			initStats(log, exporter)
+// 			return
+// 		}
+// 		d := time.Second * 20 * time.Duration(i)
+// 		log.Debugf("sleeping %v to retry initializing Stackdriver exporter", d)
+// 		time.Sleep(d)
+// 	}
+// 	log.Warn("could not initialize Stackdriver exporter after retrying, giving up")
+// }
 
 func initTracing(log logrus.FieldLogger) {
 	// This is a demo app with low QPS. trace.AlwaysSample() is used here
 	// to make sure traces are available for observation and analysis.
 	// In a production environment or high QPS setup please use
 	// trace.ProbabilitySampler set at the desired probability.
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	// trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
 	initOpenTelemetry(log)
 	//initJaegerTracing(log)
@@ -318,28 +326,28 @@ func initTracing(log logrus.FieldLogger) {
 
 }
 
-func initProfiling(log logrus.FieldLogger, service, version string) {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		log = log.WithField("retry", i)
-		if err := profiler.Start(profiler.Config{
-			Service:        service,
-			ServiceVersion: version,
-			// ProjectID must be set if not running on GCP.
-			// ProjectID: "my-project",
-		}); err != nil {
-			log.Warnf("warn: failed to start profiler: %+v", err)
-		} else {
-			log.Info("started Stackdriver profiler")
-			return
-		}
-		d := time.Second * 10 * time.Duration(i)
-		log.Debugf("sleeping %v to retry initializing Stackdriver profiler", d)
-		time.Sleep(d)
-	}
-	log.Warn("warning: could not initialize Stackdriver profiler after retrying, giving up")
-}
+// func initProfiling(log logrus.FieldLogger, service, version string) {
+// 	// TODO(ahmetb) this method is duplicated in other microservices using Go
+// 	// since they are not sharing packages.
+// 	for i := 1; i <= 3; i++ {
+// 		log = log.WithField("retry", i)
+// 		if err := profiler.Start(profiler.Config{
+// 			Service:        service,
+// 			ServiceVersion: version,
+// 			// ProjectID must be set if not running on GCP.
+// 			// ProjectID: "my-project",
+// 		}); err != nil {
+// 			log.Warnf("warn: failed to start profiler: %+v", err)
+// 		} else {
+// 			log.Info("started Stackdriver profiler")
+// 			return
+// 		}
+// 		d := time.Second * 10 * time.Duration(i)
+// 		log.Debugf("sleeping %v to retry initializing Stackdriver profiler", d)
+// 		time.Sleep(d)
+// 	}
+// 	log.Warn("warning: could not initialize Stackdriver profiler after retrying, giving up")
+// }
 
 func mustMapEnv(target *string, envKey string) {
 	v := os.Getenv(envKey)
@@ -354,10 +362,12 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
-		grpc.WithUnaryInterceptor(grpctrace.UnaryClientInterceptor(global.TraceProvider().Tracer("frontend"))),
-		grpc.WithStreamInterceptor(grpctrace.StreamClientInterceptor(global.TraceProvider().Tracer("frontend"))))
+		// grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	)
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}
 }
+
