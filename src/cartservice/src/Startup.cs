@@ -59,7 +59,7 @@ namespace cartservice
                     builder.AddAspNetCoreInstrumentation()
                         // .AddGrpcClientInstrumentation()
                         // .AddHttpClientInstrumentation()
-                        .AddConsoleExporter()
+                        // .AddConsoleExporter()
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
                         {
