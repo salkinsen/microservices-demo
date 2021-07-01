@@ -141,7 +141,7 @@ func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvide
 		// Record information about this application in an Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("frontend"),
+			semconv.ServiceNameKey.String("checkoutservice"),
 		)),
 	)
 	return tp, nil
