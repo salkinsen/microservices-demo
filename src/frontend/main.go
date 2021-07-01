@@ -26,12 +26,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
@@ -101,7 +101,6 @@ func main() {
 	} else {
 		log.Info("Tracing disabled.")
 	}
-
 
 	srvPort := port
 	if os.Getenv("PORT") != "" {
@@ -174,11 +173,11 @@ func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvide
 
 	log.Info("created jaeger exporter to collector at url: " + url)
 
-	// Since we're not specifying a sampler, every trace will be sampled, see:
-	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#WithSampler
 	tp := tracesdk.NewTracerProvider(
 		// Always be sure to batch in production.
 		tracesdk.WithBatcher(exp),
+		// see https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#ParentBased
+		tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.AlwaysSample())),
 		// Record information about this application in an Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
@@ -187,7 +186,6 @@ func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvide
 	)
 	return tp, nil
 }
-
 
 func initOpenTelemetry(log logrus.FieldLogger) {
 
@@ -207,8 +205,6 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 }
-
-
 
 func mustMapEnv(target *string, envKey string) {
 	v := os.Getenv(envKey)
@@ -231,4 +227,3 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}
 }
-
