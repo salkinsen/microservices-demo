@@ -104,7 +104,7 @@ func main() {
 
 	if os.Getenv("DISABLE_TRACING") == "" {
 		log.Info("Tracing enabled.")
-		go initTracing(log)
+		go initOpenTelemetry(log)
 	} else {
 		log.Info("Tracing disabled.")
 	}
@@ -241,113 +241,10 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 }
 
 
-// func initJaegerTracing(log logrus.FieldLogger) {
-
-// 	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
-// 	if svcAddr == "" {
-// 		log.Info("jaeger initialization disabled.")
-// 		return
-// 	}
-
-// 	tracer := otel.Tracer("frontend")
-
-// 	tp, err := tracerProvider(fmt.Sprintf("http://%s", svcAddr))
-
-// 	// set global tracer provider, so imported instrumentation will use it
-// 	otel.SetTracerProvider(tp)
 
 
-// 	// Register the Jaeger exporter to be able to retrieve
-// 	// the collected spans.
-// 	exporter, err := ocjaeger.NewExporter(jaeger.Options{
-// 		Endpoint: fmt.Sprintf("http://%s", svcAddr),
-// 		Process: ocjaeger.Process{
-// 			ServiceName: "frontend",
-// 		},
-// 	})
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	trace.RegisterExporter(exporter)
-// 	log.Info("jaeger initialization completed.")
-// }
 
-// func initStats(log logrus.FieldLogger, exporter *stackdriver.Exporter) {
-// 	view.SetReportingPeriod(60 * time.Second)
-// 	view.RegisterExporter(exporter)
-// 	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
-// 		log.Warn("Error registering http default server views")
-// 	} else {
-// 		log.Info("Registered http default server views")
-// 	}
-// 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
-// 		log.Warn("Error registering grpc default client views")
-// 	} else {
-// 		log.Info("Registered grpc default client views")
-// 	}
-// }
 
-// func initStackdriverTracing(log logrus.FieldLogger) {
-// 	// TODO(ahmetb) this method is duplicated in other microservices using Go
-// 	// since they are not sharing packages.
-// 	for i := 1; i <= 3; i++ {
-// 		log = log.WithField("retry", i)
-// 		exporter, err := stackdriver.NewExporter(stackdriver.Options{})
-// 		if err != nil {
-// 			// log.Warnf is used since there are multiple backends (stackdriver & jaeger)
-// 			// to store the traces. In production setup most likely you would use only one backend.
-// 			// In that case you should use log.Fatalf.
-// 			log.Warnf("failed to initialize Stackdriver exporter: %+v", err)
-// 		} else {
-// 			trace.RegisterExporter(exporter)
-// 			log.Info("registered Stackdriver tracing")
-
-// 			// Register the views to collect server stats.
-// 			initStats(log, exporter)
-// 			return
-// 		}
-// 		d := time.Second * 20 * time.Duration(i)
-// 		log.Debugf("sleeping %v to retry initializing Stackdriver exporter", d)
-// 		time.Sleep(d)
-// 	}
-// 	log.Warn("could not initialize Stackdriver exporter after retrying, giving up")
-// }
-
-func initTracing(log logrus.FieldLogger) {
-	// This is a demo app with low QPS. trace.AlwaysSample() is used here
-	// to make sure traces are available for observation and analysis.
-	// In a production environment or high QPS setup please use
-	// trace.ProbabilitySampler set at the desired probability.
-	// trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-
-	initOpenTelemetry(log)
-	//initJaegerTracing(log)
-	// initStackdriverTracing(log)
-
-}
-
-// func initProfiling(log logrus.FieldLogger, service, version string) {
-// 	// TODO(ahmetb) this method is duplicated in other microservices using Go
-// 	// since they are not sharing packages.
-// 	for i := 1; i <= 3; i++ {
-// 		log = log.WithField("retry", i)
-// 		if err := profiler.Start(profiler.Config{
-// 			Service:        service,
-// 			ServiceVersion: version,
-// 			// ProjectID must be set if not running on GCP.
-// 			// ProjectID: "my-project",
-// 		}); err != nil {
-// 			log.Warnf("warn: failed to start profiler: %+v", err)
-// 		} else {
-// 			log.Info("started Stackdriver profiler")
-// 			return
-// 		}
-// 		d := time.Second * 10 * time.Duration(i)
-// 		log.Debugf("sleeping %v to retry initializing Stackdriver profiler", d)
-// 		time.Sleep(d)
-// 	}
-// 	log.Warn("warning: could not initialize Stackdriver profiler after retrying, giving up")
-// }
 
 func mustMapEnv(target *string, envKey string) {
 	v := os.Getenv(envKey)
