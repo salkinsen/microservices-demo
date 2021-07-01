@@ -49,16 +49,12 @@ namespace cartservice
 
             services.AddGrpc();
 
-            // Adding the OtlpExporter creates a GrpcChannel.
-            // This switch must be set before creating a GrpcChannel/HttpClient when calling an insecure gRPC service.
-            // See: https://docs.microsoft.com/aspnet/core/grpc/troubleshoot#call-insecure-grpc-services-with-net-core-client
-            //AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
             services.AddOpenTelemetryTracing(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation()
-                        .AddGrpcClientInstrumentation()
-                        .AddHttpClientInstrumentation()
+                        // .AddGrpcClientInstrumentation()
+                        // .AddHttpClientInstrumentation()
                         // .AddConsoleExporter()
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
@@ -69,8 +65,8 @@ namespace cartservice
                     Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
                     if (cartStore is RedisCartStore redisCartStore)
                     {
-                        builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
-                        Console.WriteLine($"Adding redis instrumentation to trace builder.");
+                        // builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
+                        // Console.WriteLine($"Adding redis instrumentation to trace builder.");
                     }
                 }
             );
