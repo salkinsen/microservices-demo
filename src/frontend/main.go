@@ -21,9 +21,6 @@ import (
 	"os"
 	"time"
 
-	// "cloud.google.com/go/profiler"
-	// ocjaeger "contrib.go.opencensus.io/exporter/jaeger"
-	// "contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,14 +28,9 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
-	// "go.opentelemetry.io/otel/attribute"
-	// "go.opentelemetry.io/otel/baggage"
-	// "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/propagation"
-	// "go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
-	// "go.opentelemetry.io/otel/instrumentation/grpctrace"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
@@ -102,7 +94,7 @@ func main() {
 	}
 	log.Out = os.Stdout
 
-	if os.Getenv("DISABLE_OT_TRACING") == "" {
+	if os.Getenv("DISABLE_TRACING") == "" {
 		log.Info("Tracing enabled.")
 		go initOpenTelemetry(log)
 
@@ -196,8 +188,6 @@ func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvide
 	return tp, nil
 }
 
-// code for the  following initOpenTelemetry-function has been taken (and adapted) from one of the official open-telemetry examples:
-// https://github.com/open-telemetry/opentelemetry-go/blob/main/example/jaeger/main.go
 
 func initOpenTelemetry(log logrus.FieldLogger) {
 
@@ -212,29 +202,10 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 		log.Fatal(err)
 	}
 
-	// Register our TracerProvider as the global so any imported
-	// instrumentation in the future will default to using it.
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
 
-	// // Cleanly shutdown and flush telemetry when the application exits.
-	// defer func(ctx context.Context) {
-	// 	// Do not make the application hang when it is shutdown.
-	// 	ctx, cancel = context.WithTimeout(ctx, time.Second*5)
-	// 	defer cancel()
-	// 	if err := tp.Shutdown(ctx); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }(ctx)
-
-	// tr := tp.Tracer("frontend")
-
-	// ctx, span := tr.Start(ctx, "root")
-	// defer span.End()
 }
 
 
