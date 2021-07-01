@@ -35,7 +35,7 @@ import (
 	// "go.opentelemetry.io/otel/baggage"
 	// "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	// "go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/propagation"
 	// "go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	// "go.opentelemetry.io/otel/instrumentation/grpctrace"
@@ -102,19 +102,14 @@ func main() {
 	}
 	log.Out = os.Stdout
 
-	if os.Getenv("DISABLE_TRACING") == "" {
+	if os.Getenv("DISABLE_OT_TRACING") == "" {
 		log.Info("Tracing enabled.")
 		go initOpenTelemetry(log)
+
 	} else {
 		log.Info("Tracing disabled.")
 	}
 
-	// if os.Getenv("DISABLE_PROFILER") == "" {
-	// 	log.Info("Profiling enabled.")
-	// 	go initProfiling(log, "frontend", "1.0.0")
-	// } else {
-	// 	log.Info("Profiling disabled.")
-	// }
 
 	srvPort := port
 	if os.Getenv("PORT") != "" {
@@ -221,28 +216,26 @@ func initOpenTelemetry(log logrus.FieldLogger) {
 	// instrumentation in the future will default to using it.
 	otel.SetTracerProvider(tp)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	
+	// ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
 
-	// Cleanly shutdown and flush telemetry when the application exits.
-	defer func(ctx context.Context) {
-		// Do not make the application hang when it is shutdown.
-		ctx, cancel = context.WithTimeout(ctx, time.Second*5)
-		defer cancel()
-		if err := tp.Shutdown(ctx); err != nil {
-			log.Fatal(err)
-		}
-	}(ctx)
+	// // Cleanly shutdown and flush telemetry when the application exits.
+	// defer func(ctx context.Context) {
+	// 	// Do not make the application hang when it is shutdown.
+	// 	ctx, cancel = context.WithTimeout(ctx, time.Second*5)
+	// 	defer cancel()
+	// 	if err := tp.Shutdown(ctx); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }(ctx)
 
-	tr := tp.Tracer("frontend")
+	// tr := tp.Tracer("frontend")
 
-	ctx, span := tr.Start(ctx, "root")
-	defer span.End()
+	// ctx, span := tr.Start(ctx, "root")
+	// defer span.End()
 }
-
-
-
-
 
 
 
