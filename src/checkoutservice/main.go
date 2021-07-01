@@ -106,7 +106,10 @@ func main() {
 	}
 
 	var srv *grpc.Server
-	srv = grpc.NewServer()
+	srv = grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
@@ -358,7 +361,7 @@ func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, 
 		return nil, fmt.Errorf("could not connect currency service: %+v", err)
 	}
 	defer conn.Close()
-	result, err := pb.NewCurrencyServiceClient(conn).Convert(context.TODO(), &pb.CurrencyConversionRequest{
+	result, err := pb.NewCurrencyServiceClient(conn).Convert(ctx, &pb.CurrencyConversionRequest{
 		From:   from,
 		ToCode: toCurrency})
 	if err != nil {
