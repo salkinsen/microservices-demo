@@ -55,6 +55,7 @@ namespace cartservice
                         // .AddGrpcClientInstrumentation()
                         // .AddHttpClientInstrumentation()
                         // .AddConsoleExporter()
+                        .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
                         {
