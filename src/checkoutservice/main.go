@@ -20,6 +20,8 @@ import (
 	"net"
 	"os"
 	"time"
+	"strings"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -73,7 +75,7 @@ type checkoutService struct {
 func main() {
 	if os.Getenv("DISABLE_TRACING") == "" {
 		log.Info("Tracing enabled.")
-		go initOpenTelemetry(log)
+		initOpenTelemetry(log)
 
 	} else {
 		log.Info("Tracing disabled.")
@@ -117,31 +119,33 @@ func main() {
 	log.Fatal(err)
 }
 
-// the following tracerProvider-function has been taken (and adapted) from one of the official open-telemetry examples:
+// for reference, see also:
 // https://github.com/open-telemetry/opentelemetry-go/blob/main/example/jaeger/main.go
-
-// tracerProvider returns an OpenTelemetry TracerProvider configured to use
-// the Jaeger exporter that will send spans to the provided url. The returned
-// TracerProvider will also use a Resource configured with all the information
-// about the application.
-func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvider, error) {
+func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, error) {
 
 	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+
+	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
+	if svcAddr == "" {
+		return nil, errors.New("missing JAEGER_SERVICE_ADDR, can't initialize Jaeger exporter")
+	}
+
+	splitJaegerAddr := strings.Split(svcAddr, ":")
+	jaegerAgentHost := splitJaegerAddr[0]
+	jaegerAgentPort := splitJaegerAddr[1]
+
+	// exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(jaegerAgentHost), jaeger.WithAgentPort(jaegerAgentPort)));
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("created jaeger exporter to collector at url: " + url)
+	log.Info("created jaeger exporter to collector at " + svcAddr)
 
-	// Since we're not specifying a sampler, every trace will be sampled, see:
-	// https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#WithSampler
 	tp := tracesdk.NewTracerProvider(
-		// Always be sure to batch in production.
-		tracesdk.WithBatcher(exp),
+		tracesdk.WithBatcher(exporter),
 		// see https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#ParentBased
 		tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.AlwaysSample())),
-		// Record information about this application in an Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("checkoutservice"),
@@ -152,13 +156,9 @@ func tracerProvider(url string, log logrus.FieldLogger) (*tracesdk.TracerProvide
 
 func initOpenTelemetry(log logrus.FieldLogger) {
 
-	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
-	if svcAddr == "" {
-		log.Info("jaeger initialization disabled.")
-		return
-	}
 
-	tp, err := tracerProvider(fmt.Sprintf("http://%s/api/traces", svcAddr), log)
+
+	tp, err := createTracerProvider(log)
 	if err != nil {
 		log.Fatal(err)
 	}

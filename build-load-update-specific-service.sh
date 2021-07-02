@@ -16,4 +16,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-kubectl rollout restart -f kubernetes-manifests/$ms.yaml
+# kubectl rollout restart -f kubernetes-manifests/$ms.yaml
+
+kubectl delete -f kubernetes-manifests/$ms.yaml
+if [ $? -ne 0 ]; then
+    echo "could not delete $ms, aborting ..."
+    exit 1
+fi
+
+kubectl apply -f kubernetes-manifests/$ms.yaml
