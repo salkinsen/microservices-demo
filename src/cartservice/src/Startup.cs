@@ -49,7 +49,6 @@ namespace cartservice
 
             services.AddGrpc();
 
-
             services.AddOpenTelemetryTracing(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation()
@@ -65,8 +64,8 @@ namespace cartservice
                     Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
                     if (cartStore is RedisCartStore redisCartStore)
                     {
-                        // builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
-                        // Console.WriteLine($"Adding redis instrumentation to trace builder.");
+                        builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
+                        Console.WriteLine($"Adding redis instrumentation to trace builder.");
                     }
                 }
             );
