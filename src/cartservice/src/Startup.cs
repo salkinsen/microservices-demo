@@ -51,9 +51,11 @@ namespace cartservice
 
             services.AddOpenTelemetryTracing(builder =>
                 {
-                    builder.AddAspNetCoreInstrumentation()
-                        // .AddGrpcClientInstrumentation()
-                        // .AddHttpClientInstrumentation()
+                    builder.AddAspNetCoreInstrumentation(config => {
+                        config.EnableGrpcAspNetCoreSupport = true;
+                    })
+                        .AddGrpcClientInstrumentation()
+                        .AddHttpClientInstrumentation()
                         // .AddConsoleExporter()
                         .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
