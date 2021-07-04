@@ -47,8 +47,12 @@ spec:
         env:
         - name: PORT
           value: "7000"
-        - name: DISABLE_TRACING
-          value: "1"
+        # - name: DISABLE_TRACING
+        #   value: "1"
+        # important: node.js uses 6832 (binary Thrift protocol) port (not 6831), see
+        # https://www.jaegertracing.io/docs/1.23/deployment/
+        - name: JAEGER_SERVICE_ADDR
+          value: "jaeger-agent:6832"
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:7000"]

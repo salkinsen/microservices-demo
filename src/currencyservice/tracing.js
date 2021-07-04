@@ -1,13 +1,10 @@
-// if(process.env.DISABLE_TRACING) {
-//   console.log("Tracing disabled.")
-//   return
-// }
+if(process.env.DISABLE_TRACING) {
+  console.log("Tracing disabled.")
+  return
+}
 
-// console.log("Tracing enabled")
+console.log("Tracing enabled")
 
-// TODO: remove http instrumentation, (if grpc works without it)
-// (TODO: remove uncesseary dependencies)
-// TODO: use env variable for jaeger agent
 
 // The following code was taken (and adapted) from this official getting-started-guide:
 // https://github.com/open-telemetry/opentelemetry-js/blob/main/getting-started/README.md
@@ -33,11 +30,14 @@ const provider = new NodeTracerProvider({
 // uncomment to get logs about tracing
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ALL);
 
+const jaegerAddr = process.env.JAEGER_SERVICE_ADDR
+const jaegerAddrParts = jaegerAddr.split(':');
+
 provider.addSpanProcessor(
   new BatchSpanProcessor(
     new JaegerExporter({
-      host: 'jaeger-agent',
-      port: 6832
+      host: jaegerAddrParts[0],
+      port: jaegerAddrParts[1]
     })
   )
 );
