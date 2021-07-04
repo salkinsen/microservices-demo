@@ -33,12 +33,23 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_exporter
 from opencensus.ext.grpc import server_interceptor
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.trace import samplers
+from opentelemetry.instrumentation.grpc import server_interceptor
 
 # import googleclouddebugger
 import googlecloudprofiler
 
 from logger import getJSONLogger
 logger = getJSONLogger('emailservice-server')
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
+
+from opentelemetry.exporter.jaeger import thrift
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 # try:
 #     googleclouddebugger.enable(
@@ -122,8 +133,24 @@ class HealthCheck():
       status=health_pb2.HealthCheckResponse.SERVING)
 
 def start(dummy_mode):
-  server = grpc.server(futures.ThreadPoolExecutor(max_workers=10),
-                       interceptors=(tracer_interceptor,))
+
+  try:
+    if "DISABLE_TRACING" in os.environ:
+      raise KeyError()
+    else:
+      # tracing enabled
+      interceptor = server_interceptor(trace.get_tracer_provider())
+      server = grpc.server(
+          futures.ThreadPoolExecutor(max_workers=10), interceptors=(interceptor,)
+      )
+
+  except (KeyError, DefaultCredentialsError):
+      # tracing disabled
+      server = grpc.server(futures.ThreadPoolExecutor(max_workers=10),)
+
+
+
+
   service = None
   if dummy_mode:
     service = DummyEmailService()
@@ -188,13 +215,21 @@ if __name__ == '__main__':
       raise KeyError()
     else:
       logger.info("Tracing enabled.")
-      sampler = samplers.AlwaysOnSampler()
-      exporter = stackdriver_exporter.StackdriverExporter(
-        project_id=os.environ.get('GCP_PROJECT_ID'),
-        transport=AsyncTransport)
-      tracer_interceptor = server_interceptor.OpenCensusServerInterceptor(sampler, exporter)
+      trace.set_tracer_provider(
+          TracerProvider(
+              resource=Resource.create({SERVICE_NAME: "emailservice"})
+          )
+      )
+
+      jaeger_exporter = thrift.JaegerExporter(
+          agent_host_name="jaeger-agent",
+          agent_port=6831,
+      )
+      trace.get_tracer_provider().add_span_processor(
+          BatchSpanProcessor(jaeger_exporter)
+      )
+
   except (KeyError, DefaultCredentialsError):
       logger.info("Tracing disabled.")
-      tracer_interceptor = server_interceptor.OpenCensusServerInterceptor()
 
   start(dummy_mode = True)
