@@ -42,7 +42,9 @@ dependencies {
                 "io.opentelemetry:opentelemetry-api:${otelVersion}",
                 "io.opentelemetry:opentelemetry-sdk:${otelVersion}",
                 "io.opentelemetry:opentelemetry-exporter-logging:${otelVersion}",
-                "io.opentelemetry:opentelemetry-semconv:${otelVersion}-alpha"
+                "io.opentelemetry:opentelemetry-semconv:${otelVersion}-alpha",
+                "io.opentelemetry:opentelemetry-exporter-jaeger-thrift:${otelVersion}"
+    
 
         runtimeOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                 "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",

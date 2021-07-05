@@ -14,6 +14,11 @@ import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.exporter.jaeger.thrift.JaegerThriftSpanExporter;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 
 // TODO: replace spanProcessor with batchProcessor
 // TODO: replace logging exporter with jaeger exporter
@@ -22,10 +27,23 @@ class OtelConfig {
 
   static OpenTelemetry initOpenTelemetry() {
 
+    String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
+
     // Set to process the spans with the LoggingSpanExporter
-    LoggingSpanExporter exporter = new LoggingSpanExporter();
+    // LoggingSpanExporter exporter = new LoggingSpanExporter();
+    JaegerThriftSpanExporter exporter =
+        JaegerThriftSpanExporter.builder()
+            .setEndpoint(jaegerAddr)
+            .build();
+    
+    Resource serviceNameResource =
+    Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "adservice"));
+
     SdkTracerProvider sdkTracerProvider =
-        SdkTracerProvider.builder().addSpanProcessor(SimpleSpanProcessor.create(exporter)).build();
+        SdkTracerProvider.builder()
+            .addSpanProcessor(BatchSpanProcessor.builder(exporter).build())
+            .setResource(Resource.getDefault().merge(serviceNameResource))
+            .build();
 
     OpenTelemetrySdk openTelemetrySdk =
         OpenTelemetrySdk.builder()
