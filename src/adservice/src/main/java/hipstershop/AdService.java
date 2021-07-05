@@ -22,24 +22,19 @@ import com.google.common.collect.Iterables;
 import hipstershop.Demo.Ad;
 import hipstershop.Demo.AdRequest;
 import hipstershop.Demo.AdResponse;
+
+import io.grpc.Contexts;
+import io.grpc.Grpc;
+import io.grpc.Metadata;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
 import io.grpc.StatusRuntimeException;
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
 import io.grpc.services.*;
 import io.grpc.stub.StreamObserver;
-import io.opencensus.common.Duration;
-import io.opencensus.contrib.grpc.metrics.RpcViews;
-import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
-import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
-import io.opencensus.exporter.trace.jaeger.JaegerExporterConfiguration;
-import io.opencensus.exporter.trace.jaeger.JaegerTraceExporter;
-import io.opencensus.exporter.trace.stackdriver.StackdriverTraceConfiguration;
-import io.opencensus.exporter.trace.stackdriver.StackdriverTraceExporter;
-import io.opencensus.trace.AttributeValue;
-import io.opencensus.trace.Span;
-import io.opencensus.trace.Tracer;
-import io.opencensus.trace.Tracing;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,10 +45,48 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
+
+import java.net.InetSocketAddress;
+
 public final class AdService {
 
   private static final Logger logger = LogManager.getLogger(AdService.class);
-  private static final Tracer tracer = Tracing.getTracer();
+
+  private static final OpenTelemetry otel = OtelConfig.initOpenTelemetry();
+
+/* The following code (until l. 82) has been taken from
+*  https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/HelloWorldServer.java
+*  Copyright 2015 The gRPC Authors
+*  Copyright The OpenTelemetry Authors
+*  SPDX-License-Identifier: Apache-2.0   */
+
+// Extract the Distributed Context from the gRPC metadata
+  private static final TextMapGetter<Metadata> getter =
+  new TextMapGetter<Metadata>() {
+    @Override
+    public Iterable<String> keys(Metadata carrier) {
+      return carrier.keys();
+    }
+    @Override
+    public String get(Metadata carrier, String key) {
+      Metadata.Key<String> k = Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER);
+      if (carrier.containsKey(k)) {
+        return carrier.get(k);
+      }
+      return "";
+    }
+  };
+
+  private final Tracer tracer =  otel.getTracer("adservice");
+  private final TextMapPropagator textFormat = otel.getPropagators().getTextMapPropagator();
 
   @SuppressWarnings("FieldCanBeLocal")
   private static int MAX_ADS_TO_SERVE = 2;
@@ -71,6 +104,7 @@ public final class AdService {
         ServerBuilder.forPort(port)
             .addService(new AdServiceImpl())
             .addService(healthMgr.getHealthService())
+            .intercept(new OpenTelemetryServerInterceptor())
             .build()
             .start();
     logger.info("Ad Service started, listening on " + port);
@@ -106,30 +140,30 @@ public final class AdService {
     @Override
     public void getAds(AdRequest req, StreamObserver<AdResponse> responseObserver) {
       AdService service = AdService.getInstance();
-      Span span = tracer.getCurrentSpan();
+      // Span span = tracer.getCurrentSpan();
       try {
-        span.putAttribute("method", AttributeValue.stringAttributeValue("getAds"));
+        // span.putAttribute("method", AttributeValue.stringAttributeValue("getAds"));
         List<Ad> allAds = new ArrayList<>();
         logger.info("received ad request (context_words=" + req.getContextKeysList() + ")");
         if (req.getContextKeysCount() > 0) {
-          span.addAnnotation(
-              "Constructing Ads using context",
-              ImmutableMap.of(
-                  "Context Keys",
-                  AttributeValue.stringAttributeValue(req.getContextKeysList().toString()),
-                  "Context Keys length",
-                  AttributeValue.longAttributeValue(req.getContextKeysCount())));
+          // span.addAnnotation(
+          //     "Constructing Ads using context",
+          //     ImmutableMap.of(
+          //         "Context Keys",
+          //         AttributeValue.stringAttributeValue(req.getContextKeysList().toString()),
+          //         "Context Keys length",
+          //         AttributeValue.longAttributeValue(req.getContextKeysCount())));
           for (int i = 0; i < req.getContextKeysCount(); i++) {
             Collection<Ad> ads = service.getAdsByCategory(req.getContextKeys(i));
             allAds.addAll(ads);
           }
         } else {
-          span.addAnnotation("No Context provided. Constructing random Ads.");
+          // span.addAnnotation("No Context provided. Constructing random Ads.");
           allAds = service.getRandomAds();
         }
         if (allAds.isEmpty()) {
           // Serve random ads.
-          span.addAnnotation("No Ads found based on context. Constructing random Ads.");
+          // span.addAnnotation("No Ads found based on context. Constructing random Ads.");
           allAds = service.getRandomAds();
         }
         AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
@@ -215,113 +249,62 @@ public final class AdService {
         .build();
   }
 
-  private static void initStats() {
-    if (System.getenv("DISABLE_STATS") != null) {
-      logger.info("Stats disabled.");
-      return;
-    }
-    logger.info("Stats enabled");
-
-    long sleepTime = 10; /* seconds */
-    int maxAttempts = 5;
-    boolean statsExporterRegistered = false;
-    for (int i = 0; i < maxAttempts; i++) {
-      try {
-        if (!statsExporterRegistered) {
-          StackdriverStatsExporter.createAndRegister(
-              StackdriverStatsConfiguration.builder()
-                  .setExportInterval(Duration.create(60, 0))
-                  .build());
-          statsExporterRegistered = true;
-        }
-      } catch (Exception e) {
-        if (i == (maxAttempts - 1)) {
-          logger.log(
-              Level.WARN,
-              "Failed to register Stackdriver Exporter."
-                  + " Stats data will not reported to Stackdriver. Error message: "
-                  + e.toString());
-        } else {
-          logger.info("Attempt to register Stackdriver Exporter in " + sleepTime + " seconds ");
-          try {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
-          } catch (Exception se) {
-            logger.log(Level.WARN, "Exception while sleeping" + se.toString());
-          }
-        }
-      }
-    }
-    logger.info("Stats enabled - Stackdriver Exporter initialized.");
-  }
-
-  private static void initTracing() {
-    if (System.getenv("DISABLE_TRACING") != null) {
-      logger.info("Tracing disabled.");
-      return;
-    }
-    logger.info("Tracing enabled");
-
-    long sleepTime = 10; /* seconds */
-    int maxAttempts = 5;
-    boolean traceExporterRegistered = false;
-
-    for (int i = 0; i < maxAttempts; i++) {
-      try {
-        if (!traceExporterRegistered) {
-          StackdriverTraceExporter.createAndRegister(
-              StackdriverTraceConfiguration.builder().build());
-          traceExporterRegistered = true;
-        }
-      } catch (Exception e) {
-        if (i == (maxAttempts - 1)) {
-          logger.log(
-              Level.WARN,
-              "Failed to register Stackdriver Exporter."
-                  + " Tracing data will not reported to Stackdriver. Error message: "
-                  + e.toString());
-        } else {
-          logger.info("Attempt to register Stackdriver Exporter in " + sleepTime + " seconds ");
-          try {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
-          } catch (Exception se) {
-            logger.log(Level.WARN, "Exception while sleeping" + se.toString());
-          }
-        }
-      }
-    }
-    logger.info("Tracing enabled - Stackdriver exporter initialized.");
-  }
-
 
 
 
   private static void initJaeger() {
-    String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
-    if (jaegerAddr != null && !jaegerAddr.isEmpty()) {
-      String jaegerUrl = String.format("http://%s/api/traces", jaegerAddr);
-      // Register Jaeger Tracing.
-      JaegerTraceExporter.createAndRegister(
-          JaegerExporterConfiguration.builder()
-              .setThriftEndpoint(jaegerUrl)
-              .setServiceName("adservice")
-              .build());
-      logger.info("Jaeger initialization complete.");
-    } else {
-      logger.info("Jaeger initialization disabled.");
+    // String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
+    // if (jaegerAddr != null && !jaegerAddr.isEmpty()) {
+    //   String jaegerUrl = String.format("http://%s/api/traces", jaegerAddr);
+    //   // Register Jaeger Tracing.
+    //   JaegerTraceExporter.createAndRegister(
+    //       JaegerExporterConfiguration.builder()
+    //           .setThriftEndpoint(jaegerUrl)
+    //           .setServiceName("adservice")
+    //           .build());
+    //   logger.info("Jaeger initialization complete.");
+    // } else {
+    //   logger.info("Jaeger initialization disabled.");
+    // }
+  }
+
+/* The following code (until l. 300) has been taken and adapted from
+*  https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/HelloWorldServer.java
+*  Copyright 2015 The gRPC Authors
+*  Copyright The OpenTelemetry Authors
+*  SPDX-License-Identifier: Apache-2.0   */
+  private class OpenTelemetryServerInterceptor implements io.grpc.ServerInterceptor {
+    @Override
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+        ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+      // Extract the Span Context from the metadata of the gRPC request
+      Context extractedContext = textFormat.extract(Context.current(), headers, getter);
+      InetSocketAddress clientInfo =
+          (InetSocketAddress) call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
+      // Build a span based on the received context
+      Span span =
+          tracer
+              .spanBuilder("hipstershop.AdService/GetAds")
+              .setParent(extractedContext)
+              .setSpanKind(SpanKind.SERVER)
+              .startSpan();
+      try (Scope innerScope = span.makeCurrent()) {
+        span.setAttribute("component", "grpc");
+        span.setAttribute("rpc.service", "hipstershop.AdService");
+        span.setAttribute("net.peer.ip", clientInfo.getHostString());
+        span.setAttribute("net.peer.port", clientInfo.getPort());
+        // Process the gRPC call normally
+        return Contexts.interceptCall(io.grpc.Context.current(), call, headers, next);
+      } finally {
+        span.end();
+      }
     }
   }
 
   /** Main launches the server from the command line. */
   public static void main(String[] args) throws IOException, InterruptedException {
     // Registers all RPC views.
-    RpcViews.registerAllGrpcViews();
-
-    new Thread(
-            () -> {
-              initStats();
-              initTracing();
-            })
-        .start();
+    // RpcViews.registerAllGrpcViews();
 
     // Register Jaeger
     initJaeger();
