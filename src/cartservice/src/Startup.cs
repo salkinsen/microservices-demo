@@ -54,8 +54,6 @@ namespace cartservice
                     builder.AddAspNetCoreInstrumentation(config => {
                         config.EnableGrpcAspNetCoreSupport = true;
                     })
-                        .AddGrpcClientInstrumentation()
-                        .AddHttpClientInstrumentation()
                         // .AddConsoleExporter()
                         .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
@@ -65,11 +63,11 @@ namespace cartservice
                             options.AgentPort = Convert.ToInt32(Configuration["JAEGER_SERVICE_ADDR"].Split(':')[1]);
                         });
                     Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
-                    if (cartStore is RedisCartStore redisCartStore)
-                    {
-                        builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
-                        Console.WriteLine($"Adding redis instrumentation to trace builder.");
-                    }
+                    // if (cartStore is RedisCartStore redisCartStore)
+                    // {
+                    //     builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
+                    //     Console.WriteLine($"Adding redis instrumentation to trace builder.");
+                    // }
                 }
             );
 
