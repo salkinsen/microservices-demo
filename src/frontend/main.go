@@ -149,9 +149,6 @@ func main() {
 	var handler http.Handler = r
 	handler = &logHandler{log: log, next: handler} // add logging
 	handler = ensureSessionID(handler)             // add session ID
-	// handler = &ochttp.Handler{                     // add opencensus instrumentation
-	// 	Handler:     handler,
-	// 	Propagation: &b3.HTTPFormat{}}
 
 	log.Infof("starting server on " + addr + ":" + srvPort)
 	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
@@ -172,7 +169,6 @@ func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, err
 	jaegerAgentHost := splitJaegerAddr[0]
 	jaegerAgentPort := splitJaegerAddr[1]
 
-	// exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(jaegerAgentHost), jaeger.WithAgentPort(jaegerAgentPort)));
 	if err != nil {
 		return nil, err
@@ -220,7 +216,6 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3),
-		// grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
 		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 	)
