@@ -61,9 +61,6 @@ namespace cartservice
                         {
                             options.AgentHost = Configuration["JAEGER_SERVICE_ADDR"].Split(':')[0];
                             options.AgentPort = Convert.ToInt32(Configuration["JAEGER_SERVICE_ADDR"].Split(':')[1]);
-                            // there seems to be a bug with the batch exporter: some spans get dropped
-                            // to avoid this bug, use the simple exporter
-                            // for consistenty and to not distort measuring results, we use the batch exporter nonetheless
                             options.ExportProcessorType = ExportProcessorType.Batch;
                             // options.ExportProcessorType = ExportProcessorType.Simple;
                         })
