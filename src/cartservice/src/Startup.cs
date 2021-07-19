@@ -49,29 +49,28 @@ namespace cartservice
 
             services.AddGrpc();
 
-            // Adding the OtlpExporter creates a GrpcChannel.
-            // This switch must be set before creating a GrpcChannel/HttpClient when calling an insecure gRPC service.
-            // See: https://docs.microsoft.com/aspnet/core/grpc/troubleshoot#call-insecure-grpc-services-with-net-core-client
-            //AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-
             services.AddOpenTelemetryTracing(builder =>
                 {
-                    builder.AddAspNetCoreInstrumentation()
-                        .AddGrpcClientInstrumentation()
-                        .AddHttpClientInstrumentation()
+                    builder.AddAspNetCoreInstrumentation(config => {
+                        config.EnableGrpcAspNetCoreSupport = true;
+                    })
                         // .AddConsoleExporter()
+                        .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
                         {
                             options.AgentHost = Configuration["JAEGER_SERVICE_ADDR"].Split(':')[0];
                             options.AgentPort = Convert.ToInt32(Configuration["JAEGER_SERVICE_ADDR"].Split(':')[1]);
-                        });
+                            options.ExportProcessorType = ExportProcessorType.Batch;
+                            // options.ExportProcessorType = ExportProcessorType.Simple;
+                        })
+                        ;
                     Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
-                    if (cartStore is RedisCartStore redisCartStore)
-                    {
-                        builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
-                        Console.WriteLine($"Adding redis instrumentation to trace builder.");
-                    }
+                    // if (cartStore is RedisCartStore redisCartStore)
+                    // {
+                    //     builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
+                    //     Console.WriteLine($"Adding redis instrumentation to trace builder.");
+                    // }
                 }
             );
 
