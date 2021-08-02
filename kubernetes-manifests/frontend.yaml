@@ -89,8 +89,8 @@ spec:
           #   value: "jaeger-collector:14268"
           - name: JAEGER_SERVICE_ADDR
             value: "jaeger-agent:6831"
-          - name: RECOMMENDATION_SVC_DISABLED
-            value: "1"
+          # - name: RECOMMENDATION_SVC_DISABLED
+          #   value: "1"
           # - name: SHIPPING_SVC_DISABLED
           #   value: "1"
           resources:
