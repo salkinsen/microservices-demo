@@ -5,7 +5,7 @@
 
 // The following code has been taken and adapted from
 // https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/ExampleConfiguration.java
- package hipstershop;
+package hipstershop;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -20,8 +20,6 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 
-// TODO: replace spanProcessor with batchProcessor
-// TODO: replace logging exporter with jaeger exporter
 
 class OtelConfig {
 
@@ -29,8 +27,6 @@ class OtelConfig {
 
     String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
 
-    // Set to process the spans with the LoggingSpanExporter
-    // LoggingSpanExporter exporter = new LoggingSpanExporter();
     JaegerThriftSpanExporter exporter =
         JaegerThriftSpanExporter.builder()
             .setEndpoint(jaegerAddr)
@@ -52,7 +48,7 @@ class OtelConfig {
             .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
             .build();
 
-    // it's always a good idea to shutdown the SDK when your process exits.
+    // add shutdown hook for process: shutdown SDK
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
