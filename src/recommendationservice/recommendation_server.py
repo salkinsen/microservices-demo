@@ -33,6 +33,7 @@ logger = getJSONLogger('recommendationservice-server')
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor
@@ -94,6 +95,7 @@ if __name__ == "__main__":
 
         grpc_server_instrumentor = GrpcInstrumentorServer()
         grpc_server_instrumentor.instrument()
+        grpc_client_instrumentor = GrpcInstrumentorClient().instrument()
     except (KeyError, DefaultCredentialsError):
         logger.info("Tracing disabled.")
 
