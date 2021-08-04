@@ -44,13 +44,6 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.instrumentation.grpc import server_interceptor
 
 
-# try:
-#     googleclouddebugger.enable(
-#         module='emailserver',
-#         version='1.0.0'
-#     )
-# except:
-#     pass
 
 # Loads confirmation email template from file
 env = Environment(
