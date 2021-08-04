@@ -46,20 +46,10 @@ spec:
         env:
         - name: PORT
           value: "3550"
-        # - name: DISABLE_STATS
-        #   value: "1"
         # - name: DISABLE_TRACING
-        #   value: "1"
-        # - name: DISABLE_PROFILER
         #   value: "1"
         - name: JAEGER_SERVICE_ADDR
           value: "jaeger-agent:6831"
-        # readinessProbe:
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:3550"]
-        # livenessProbe:
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:3550"]
         resources:
           requests:
             cpu: 100m

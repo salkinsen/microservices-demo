@@ -128,11 +128,18 @@ func run(port string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var srv *grpc.Server
+
+	if os.Getenv("DISABLE_TRACING") == "" {
+		srv = grpc.NewServer(
+			grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+	} else {
+		srv = grpc.NewServer()
+	}
 	
-	var srv = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
-	)
 
 	svc := &productCatalog{}
 
