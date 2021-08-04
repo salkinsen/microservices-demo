@@ -108,10 +108,17 @@ func main() {
 	}
 
 	var srv *grpc.Server
-	srv = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
-	)
+
+	if os.Getenv("DISABLE_TRACING") == "" {
+		srv = grpc.NewServer(
+			grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+	} else {
+		srv = grpc.NewServer()
+	}
+
+
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
@@ -134,13 +141,12 @@ func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, err
 	jaegerAgentHost := splitJaegerAddr[0]
 	jaegerAgentPort := splitJaegerAddr[1]
 
-	// exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(jaegerAgentHost), jaeger.WithAgentPort(jaegerAgentPort)));
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("created jaeger exporter to collector at " + svcAddr)
+	log.Info("created jaeger exporter to agent at " + svcAddr)
 
 	tp := tracesdk.NewTracerProvider(
 		tracesdk.WithBatcher(exporter),
@@ -280,9 +286,17 @@ func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Addres
 			error(nil)
 	}
 
-	conn, err := grpc.DialContext(ctx, cs.shippingSvcAddr,
-		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.shippingSvcAddr,
+			grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.shippingSvcAddr,
+			grpc.WithInsecure())
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("could not connect shipping service: %+v", err)
 	}
@@ -299,8 +313,15 @@ func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Addres
 }
 
 func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*pb.CartItem, error) {
-	conn, err := grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure())
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("could not connect cart service: %+v", err)
 	}
@@ -314,8 +335,15 @@ func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*p
 }
 
 func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) error {
-	conn, err := grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.cartSvcAddr, grpc.WithInsecure())
+	}
+
 	if err != nil {
 		return fmt.Errorf("could not connect cart service: %+v", err)
 	}
@@ -330,8 +358,15 @@ func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) err
 func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartItem, userCurrency string) ([]*pb.OrderItem, error) {
 	out := make([]*pb.OrderItem, len(items))
 
-	conn, err := grpc.DialContext(ctx, cs.productCatalogSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.productCatalogSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.productCatalogSvcAddr, grpc.WithInsecure())
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("could not connect product catalog service: %+v", err)
 	}
@@ -355,8 +390,16 @@ func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartI
 }
 
 func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, toCurrency string) (*pb.Money, error) {
-	conn, err := grpc.DialContext(ctx, cs.currencySvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.currencySvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.currencySvcAddr, grpc.WithInsecure())
+	}
+
+
 	if err != nil {
 		return nil, fmt.Errorf("could not connect currency service: %+v", err)
 	}
@@ -375,9 +418,15 @@ func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, pay
 		log.Info("Payment service disabled. Mocking call, always return 'Mock_Transaction_ID'")
 		return "Mock_Transaction_ID", nil
 	}
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure())
+	}
 
-	conn, err := grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return "", fmt.Errorf("failed to connect payment service: %+v", err)
 	}
@@ -397,9 +446,15 @@ func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email stri
 		log.Info("Email Service disabled. Skipping call.")
 		return nil
 	}
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.emailSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.emailSvcAddr, grpc.WithInsecure())
+	}
 
-	conn, err := grpc.DialContext(ctx, cs.emailSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return fmt.Errorf("failed to connect email service: %+v", err)
 	}
@@ -417,8 +472,15 @@ func (cs *checkoutService) shipOrder(ctx context.Context, address *pb.Address, i
 		return "Mock_Tracking_ID", nil
 	}
 
-	conn, err := grpc.DialContext(ctx, cs.shippingSvcAddr, grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	var conn *grpc.ClientConn
+	var err error
+	if os.Getenv("DISABLE_TRACING") == "" {
+		conn, err = grpc.DialContext(ctx, cs.shippingSvcAddr, grpc.WithInsecure(),
+			grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	} else {
+		conn, err = grpc.DialContext(ctx, cs.shippingSvcAddr, grpc.WithInsecure())
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("failed to connect email service: %+v", err)
 	}
