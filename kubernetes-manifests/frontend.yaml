@@ -44,22 +44,6 @@ spec:
           imagePullPolicy: "IfNotPresent"
           ports:
           - containerPort: 8080
-          # readinessProbe:
-          #   initialDelaySeconds: 10
-          #   httpGet:
-          #     path: "/_healthz"
-          #     port: 8080
-          #     httpHeaders:
-          #     - name: "Cookie"
-          #       value: "shop_session-id=x-readiness-probe"
-          # livenessProbe:
-          #   initialDelaySeconds: 10
-          #   httpGet:
-          #     path: "/_healthz"
-          #     port: 8080
-          #     httpHeaders:
-          #     - name: "Cookie"
-          #       value: "shop_session-id=x-liveness-probe"
           env:
           - name: PORT
             value: "8080"
@@ -83,6 +67,9 @@ spec:
           #   value: "aws"
           # - name: DISABLE_TRACING
           #   value: "1"
+          # # if sampling fraction can't be converted to float64, frontend will crash!
+          # - name: TRACES_SAMPLING_FRACTION
+          #   value: "0.1"
           # - name: JAEGER_SERVICE_ADDR
           #   value: "jaeger-collector:14268"
           - name: JAEGER_SERVICE_ADDR
