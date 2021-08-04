@@ -82,10 +82,17 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	var srv = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
-	)
+	var srv *grpc.Server
+
+	if os.Getenv("DISABLE_TRACING") == "" {
+		srv = grpc.NewServer(
+			grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+	} else {
+		srv = grpc.NewServer()
+	}
+
 	svc := &server{}
 	pb.RegisterShippingServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
