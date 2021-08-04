@@ -49,12 +49,15 @@ namespace cartservice
 
             services.AddGrpc();
 
-            services.AddOpenTelemetryTracing(builder =>
+            if (Configuration["DISABLE_TRACING"] != null) {
+                Console.WriteLine("Tracing disabled.");
+            } else {
+                Console.WriteLine("Tracing enabled.");
+                services.AddOpenTelemetryTracing(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation(config => {
                         config.EnableGrpcAspNetCoreSupport = true;
                     })
-                        // .AddConsoleExporter()
                         .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("cartservice"))
                         .AddJaegerExporter(options =>
@@ -62,17 +65,13 @@ namespace cartservice
                             options.AgentHost = Configuration["JAEGER_SERVICE_ADDR"].Split(':')[0];
                             options.AgentPort = Convert.ToInt32(Configuration["JAEGER_SERVICE_ADDR"].Split(':')[1]);
                             options.ExportProcessorType = ExportProcessorType.Batch;
-                            // options.ExportProcessorType = ExportProcessorType.Simple;
                         })
                         ;
                     Console.WriteLine($"Exporting OpenTelemetryTracing to: {Configuration["JAEGER_SERVICE_ADDR"]}");
-                    // if (cartStore is RedisCartStore redisCartStore)
-                    // {
-                    //     builder.AddRedisInstrumentation(redisCartStore.RedisConnectionMultiplexer);
-                    //     Console.WriteLine($"Adding redis instrumentation to trace builder.");
-                    // }
                 }
             );
+            }
+            
 
 
         }

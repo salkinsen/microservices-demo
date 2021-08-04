@@ -48,6 +48,8 @@ spec:
           value: "redis-cart:6379"
         - name: JAEGER_SERVICE_ADDR
           value: "jaeger-agent:6831"
+        # - name: DISABLE_TRACING
+        #   value: "1"
         resources:
           requests:
             cpu: 200m
@@ -55,15 +57,6 @@ spec:
           limits:
             cpu: 300m
             memory: 128Mi
-        # readinessProbe:
-        #   initialDelaySeconds: 15
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
-        # livenessProbe:
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 10
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
 ---
 apiVersion: v1
 kind: Service
