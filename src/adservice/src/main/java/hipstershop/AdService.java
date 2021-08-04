@@ -140,30 +140,18 @@ public final class AdService {
     @Override
     public void getAds(AdRequest req, StreamObserver<AdResponse> responseObserver) {
       AdService service = AdService.getInstance();
-      // Span span = tracer.getCurrentSpan();
       try {
-        // span.putAttribute("method", AttributeValue.stringAttributeValue("getAds"));
         List<Ad> allAds = new ArrayList<>();
         logger.info("received ad request (context_words=" + req.getContextKeysList() + ")");
         if (req.getContextKeysCount() > 0) {
-          // span.addAnnotation(
-          //     "Constructing Ads using context",
-          //     ImmutableMap.of(
-          //         "Context Keys",
-          //         AttributeValue.stringAttributeValue(req.getContextKeysList().toString()),
-          //         "Context Keys length",
-          //         AttributeValue.longAttributeValue(req.getContextKeysCount())));
           for (int i = 0; i < req.getContextKeysCount(); i++) {
             Collection<Ad> ads = service.getAdsByCategory(req.getContextKeys(i));
             allAds.addAll(ads);
           }
         } else {
-          // span.addAnnotation("No Context provided. Constructing random Ads.");
           allAds = service.getRandomAds();
         }
         if (allAds.isEmpty()) {
-          // Serve random ads.
-          // span.addAnnotation("No Ads found based on context. Constructing random Ads.");
           allAds = service.getRandomAds();
         }
         AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
@@ -251,23 +239,6 @@ public final class AdService {
 
 
 
-
-  private static void initJaeger() {
-    // String jaegerAddr = System.getenv("JAEGER_SERVICE_ADDR");
-    // if (jaegerAddr != null && !jaegerAddr.isEmpty()) {
-    //   String jaegerUrl = String.format("http://%s/api/traces", jaegerAddr);
-    //   // Register Jaeger Tracing.
-    //   JaegerTraceExporter.createAndRegister(
-    //       JaegerExporterConfiguration.builder()
-    //           .setThriftEndpoint(jaegerUrl)
-    //           .setServiceName("adservice")
-    //           .build());
-    //   logger.info("Jaeger initialization complete.");
-    // } else {
-    //   logger.info("Jaeger initialization disabled.");
-    // }
-  }
-
 /* The following code (until l. 300) has been taken and adapted from
 *  https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/HelloWorldServer.java
 *  Copyright 2015 The gRPC Authors
@@ -303,11 +274,6 @@ public final class AdService {
 
   /** Main launches the server from the command line. */
   public static void main(String[] args) throws IOException, InterruptedException {
-    // Registers all RPC views.
-    // RpcViews.registerAllGrpcViews();
-
-    // Register Jaeger
-    initJaeger();
 
     // Start the RPC server. You shouldn't see any output from gRPC before this.
     logger.info("AdService starting.");
