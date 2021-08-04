@@ -60,33 +60,12 @@ public final class AdService {
 
   private static final Logger logger = LogManager.getLogger(AdService.class);
 
-  private static final OpenTelemetry otel = OtelConfig.initOpenTelemetry();
+  private static OpenTelemetry otel;
 
-/* The following code (until l. 82) has been taken from
-*  https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/HelloWorldServer.java
-*  Copyright 2015 The gRPC Authors
-*  Copyright The OpenTelemetry Authors
-*  SPDX-License-Identifier: Apache-2.0   */
+  private static TextMapGetter<Metadata> getter;
 
-// Extract the Distributed Context from the gRPC metadata
-  private static final TextMapGetter<Metadata> getter =
-  new TextMapGetter<Metadata>() {
-    @Override
-    public Iterable<String> keys(Metadata carrier) {
-      return carrier.keys();
-    }
-    @Override
-    public String get(Metadata carrier, String key) {
-      Metadata.Key<String> k = Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER);
-      if (carrier.containsKey(k)) {
-        return carrier.get(k);
-      }
-      return "";
-    }
-  };
-
-  private final Tracer tracer =  otel.getTracer("adservice");
-  private final TextMapPropagator textFormat = otel.getPropagators().getTextMapPropagator();
+  private Tracer tracer;
+  private TextMapPropagator textFormat;
 
   @SuppressWarnings("FieldCanBeLocal")
   private static int MAX_ADS_TO_SERVE = 2;
@@ -100,13 +79,20 @@ public final class AdService {
     int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "9555"));
     healthMgr = new HealthStatusManager();
 
-    server =
-        ServerBuilder.forPort(port)
-            .addService(new AdServiceImpl())
-            .addService(healthMgr.getHealthService())
-            .intercept(new OpenTelemetryServerInterceptor())
-            .build()
-            .start();
+    ServerBuilder builder = ServerBuilder.forPort(port)
+        .addService(new AdServiceImpl())
+        .addService(healthMgr.getHealthService());
+    
+    if (System.getenv("DISABLE_TRACING") != null) {
+      logger.info("Tracing disabled.");
+    } else {
+      logger.info("Tracing enabled");
+      initTracing();
+      builder.intercept(new OpenTelemetryServerInterceptor());
+    }
+
+    server = builder.build().start();
+  
     logger.info("Ad Service started, listening on " + port);
     Runtime.getRuntime()
         .addShutdownHook(
@@ -126,6 +112,38 @@ public final class AdService {
       healthMgr.clearStatus("");
       server.shutdown();
     }
+  }
+
+  private void initTracing() {
+
+    /* The following code (until l. 89) has been partially taken from
+    *  https://github.com/open-telemetry/opentelemetry-java/blob/v1.3.0/examples/grpc/src/main/java/io/opentelemetry/example/grpc/HelloWorldServer.java
+    *  Copyright 2015 The gRPC Authors
+    *  Copyright The OpenTelemetry Authors
+    *  SPDX-License-Identifier: Apache-2.0   */
+
+    otel = OtelConfig.initOpenTelemetry();
+
+    // Extract the Distributed Context from the gRPC metadata
+    getter = new TextMapGetter<Metadata>() {
+      @Override
+      public Iterable<String> keys(Metadata carrier) {
+        return carrier.keys();
+      }
+      @Override
+      public String get(Metadata carrier, String key) {
+        Metadata.Key<String> k = Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER);
+        if (carrier.containsKey(k)) {
+          return carrier.get(k);
+        }
+        return "";
+      }
+    };
+
+    tracer =  otel.getTracer("adservice");
+
+    textFormat = otel.getPropagators().getTextMapPropagator();
+
   }
 
   private static class AdServiceImpl extends hipstershop.AdServiceGrpc.AdServiceImplBase {
