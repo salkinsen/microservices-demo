@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import random
-from locust import HttpUser, TaskSet, between
+from locust import HttpUser, TaskSet, between, SequentialTaskSet, constant, constant_pacing
 
 products = [
     '0PUK6V6EV0',
@@ -64,18 +64,22 @@ def checkout(l):
         'credit_card_cvv': '672',
     })
 
-class UserBehavior(TaskSet):
+class UserBehavior(SequentialTaskSet):
 
     def on_start(self):
         index(self)
 
-    tasks = {index: 1,
-        setCurrency: 2,
-        browseProduct: 10,
-        addToCart: 2,
-        viewCart: 3,
-        checkout: 1}
+    # this can be used, if we are using a regular TaskSet
+    # tasks = {index: 1,
+    #     setCurrency: 2,
+    #     browseProduct: 10,
+    #     addToCart: 2,
+    #     viewCart: 3,
+    #     checkout: 1}
+
+    tasks = [index, setCurrency, browseProduct, browseProduct, browseProduct, browseProduct,
+            addToCart, addToCart, viewCart, checkout]
 
 class WebsiteUser(HttpUser):
     tasks = [UserBehavior]
-    wait_time = between(1, 10)
+    wait_time = constant_pacing(5)

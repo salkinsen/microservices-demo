@@ -31,5 +31,6 @@ if test $STATUSCODE -ne 200; then
     exit 1
 fi
 
+
 # else, run loadgen
-locust --host="http://${FRONTEND_ADDR}" --headless -u "${USERS:-10}" 2>&1
+env WAIT_TIME_CONSTANT=$WAIT_TIME_CONSTANT env WAIT_TIME_INTERVAL_MIN=$WAIT_TIME_INTERVAL_MIN env WAIT_TIME_INTERVAL_MAX=$WAIT_TIME_INTERVAL_MAX locust --host="http://${FRONTEND_ADDR}" --headless -u "${USERS:-10}" 2>&1
