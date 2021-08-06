@@ -46,8 +46,12 @@ spec:
           value: "50051"
         # - name: DISABLE_TRACING
         #   value: "1"
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: JAEGER_SERVICE_ADDR
-          value: "jaeger-agent:6831"
+          value: "$(JAEGER_AGENT_HOST):6831"
         resources:
           requests:
             cpu: 100m

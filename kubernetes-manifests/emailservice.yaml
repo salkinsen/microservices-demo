@@ -48,6 +48,12 @@ spec:
           value: "8080"
         # - name: DISABLE_TRACING
         #   value: "1"
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: JAEGER_AGENT_PORT
+          value: "6831"
         resources:
           requests:
             cpu: 100m

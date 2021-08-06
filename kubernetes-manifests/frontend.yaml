@@ -72,8 +72,12 @@ spec:
           #   value: "0.1"
           # - name: JAEGER_SERVICE_ADDR
           #   value: "jaeger-collector:14268"
+          - name: JAEGER_AGENT_HOST
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
           - name: JAEGER_SERVICE_ADDR
-            value: "jaeger-agent:6831"
+            value: "$(JAEGER_AGENT_HOST):6831"
           # - name: RECOMMENDATION_SVC_DISABLED
           #   value: "1"
           # - name: SHIPPING_SVC_DISABLED

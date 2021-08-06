@@ -86,8 +86,8 @@ if __name__ == "__main__":
         )
 
         jaeger_exporter = thrift.JaegerExporter(
-            agent_host_name="jaeger-agent",
-            agent_port=6831,
+          agent_host_name = os.getenv('JAEGER_AGENT_HOST'),
+          agent_port = int(os.getenv('JAEGER_AGENT_PORT')),
         )
         trace.get_tracer_provider().add_span_processor(
             BatchSpanProcessor(jaeger_exporter)

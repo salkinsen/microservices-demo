@@ -46,8 +46,12 @@ spec:
         env:
         - name: REDIS_ADDR
           value: "redis-cart:6379"
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: JAEGER_SERVICE_ADDR
-          value: "jaeger-agent:6831"
+          value: "$(JAEGER_AGENT_HOST):6831"
         # - name: DISABLE_TRACING
         #   value: "1"
         resources:
