@@ -41,7 +41,7 @@ spec:
       terminationGracePeriodSeconds: 5
       restartPolicy: Always
       containers:
-      - name: main
+      - name: loadgenerator
         image: loadgenerator
         imagePullPolicy: "IfNotPresent"
         env:

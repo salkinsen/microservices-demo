@@ -37,7 +37,7 @@ spec:
                 values:
                 - meta-monitoring
       containers:
-        - name: server
+        - name: ms-checkoutservice
           image: checkoutservice
           imagePullPolicy: "IfNotPresent"
           ports:

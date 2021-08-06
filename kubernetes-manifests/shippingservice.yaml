@@ -36,7 +36,7 @@ spec:
                 values:
                 - meta-monitoring
       containers:
-      - name: server
+      - name: ms-shippingservice
         image: shippingservice
         imagePullPolicy: "IfNotPresent"
         ports:

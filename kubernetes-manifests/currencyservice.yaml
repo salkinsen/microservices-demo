@@ -38,7 +38,7 @@ spec:
                 - meta-monitoring
       terminationGracePeriodSeconds: 5
       containers:
-      - name: server
+      - name: ms-currencyservice
         image: currencyservice
         imagePullPolicy: "IfNotPresent"
         ports:

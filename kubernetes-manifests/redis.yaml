@@ -35,7 +35,7 @@ spec:
                 values:
                 - meta-monitoring
       containers:
-      - name: redis
+      - name: ms-redis
         image: redis:alpine
         imagePullPolicy: "IfNotPresent"
         ports:
