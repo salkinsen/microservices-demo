@@ -37,7 +37,7 @@ spec:
                 - meta-monitoring
       containers:
       - name: ms-shippingservice
-        image: shippingservice
+        image: salkinsen/shippingservice
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 50051

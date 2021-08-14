@@ -40,7 +40,7 @@ spec:
                 - meta-monitoring
       containers:
         - name: ms-frontend
-          image: frontend
+          image: salkinsen/frontend
           imagePullPolicy: "IfNotPresent"
           ports:
           - containerPort: 8080

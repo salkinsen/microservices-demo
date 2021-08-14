@@ -39,7 +39,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: ms-productcatalogservice
-        image: productcatalogservice
+        image: salkinsen/productcatalogservice
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 3550

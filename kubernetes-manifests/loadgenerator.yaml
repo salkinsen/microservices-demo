@@ -42,7 +42,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: loadgenerator
-        image: loadgenerator
+        image: salkinsen/loadgenerator
         imagePullPolicy: "IfNotPresent"
         env:
         - name: FRONTEND_ADDR

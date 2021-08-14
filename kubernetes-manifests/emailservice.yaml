@@ -39,7 +39,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: ms-emailservice
-        image: emailservice
+        image: salkinsen/emailservice
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 8080

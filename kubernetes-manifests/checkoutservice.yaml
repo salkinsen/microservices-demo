@@ -38,7 +38,7 @@ spec:
                 - meta-monitoring
       containers:
         - name: ms-checkoutservice
-          image: checkoutservice
+          image: salkinsen/checkoutservice
           imagePullPolicy: "IfNotPresent"
           ports:
           - containerPort: 5050

@@ -8,7 +8,7 @@
 
 for i in "${services[@]}"
 do
-	docker build ./src/$i/ -t $i:latest || docker build ./src/$i/src/ -t $i
+	docker build ./src/$i/ -t salkinsen/$i || docker build ./src/$i/src/ -t salkinsen/$i
     if [ $? -ne 0 ]; then
         failedToBuild+=("$i")
     fi

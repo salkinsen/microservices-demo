@@ -39,7 +39,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: ms-paymentservice
-        image: paymentservice
+        image: salkinsen/paymentservice
         imagePullPolicy: "IfNotPresent"
         ports:
         - containerPort: 50051

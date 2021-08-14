@@ -39,7 +39,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: ms-currencyservice
-        image: currencyservice
+        image: salkinsen/currencyservice
         imagePullPolicy: "IfNotPresent"
         ports:
         - name: grpc

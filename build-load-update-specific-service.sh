@@ -4,13 +4,13 @@
 
 ms=${1:?Please specify the microservice}
 
-docker build ./src/$ms/ -t $ms || docker build ./src/$ms/src/ -t $ms
+docker build ./src/$ms/ -t salkinsen/$ms || docker build ./src/$ms/src/ -t salkinsen/$ms
 if [ $? -ne 0 ]; then
     echo "docker image could not be build, aborting ..."
     exit 1
 fi
 
-kind load docker-image $ms
+kind load docker-image salkinsen/$ms
 if [ $? -ne 0 ]; then
     echo "docker image could not be loaded into kind cluster, aborting ..."
     exit 1
