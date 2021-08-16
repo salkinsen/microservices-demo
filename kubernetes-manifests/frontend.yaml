@@ -38,6 +38,7 @@ spec:
                 operator: NotIn
                 values:
                 - meta-monitoring
+                - observability
       containers:
         - name: ms-frontend
           image: salkinsen/frontend

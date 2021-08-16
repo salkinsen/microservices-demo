@@ -34,6 +34,7 @@ spec:
                 operator: NotIn
                 values:
                 - meta-monitoring
+                - observability
       containers:
       - name: ms-redis
         image: redis:alpine

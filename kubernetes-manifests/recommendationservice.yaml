@@ -35,6 +35,7 @@ spec:
                 operator: NotIn
                 values:
                 - meta-monitoring
+                - observability
       terminationGracePeriodSeconds: 5
       containers:
       - name: ms-recommendationservice
