@@ -44,7 +44,6 @@ def viewCart(l):
 
 def addToCart(l):
     product = random.choice(products)
-    l.client.get("/product/" + product)
     l.client.post("/cart", {
         'product_id': product,
         'quantity': random.choice([1,2,3,4,5,10])})
@@ -76,8 +75,8 @@ class UserBehavior(SequentialTaskSet):
     #     viewCart: 3,
     #     checkout: 1}
 
-    tasks = [index, setCurrency, browseProduct, browseProduct, browseProduct, browseProduct,
-            addToCart, addToCart, viewCart, checkout]
+    tasks = [index, setCurrency, browseProduct, browseProduct, browseProduct, addToCart,
+            browseProduct, addToCart, viewCart, checkout]
 
 class WebsiteUser(HttpUser):
     tasks = [UserBehavior]
