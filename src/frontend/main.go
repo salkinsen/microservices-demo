@@ -182,7 +182,7 @@ func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, err
 	if os.Getenv("TRACES_SAMPLING_FRACTION") == "" {
 		log.Info("No sampling applied, choosing ParentBased(AlwaysSample)")
 		tp = tracesdk.NewTracerProvider(
-			tracesdk.WithBatcher(exporter),
+			tracesdk.WithBatcher(exporter, tracesdk.WithMaxExportBatchSize(95)),
 			// see https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#ParentBased
 			tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.AlwaysSample())),
 			tracesdk.WithResource(resource.NewWithAttributes(
@@ -197,7 +197,7 @@ func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, err
 		}
 		log.Info(fmt.Sprintf("Applying sampling with fraction %v", fraction))
 		tp = tracesdk.NewTracerProvider(
-			tracesdk.WithBatcher(exporter),
+			tracesdk.WithBatcher(exporter, tracesdk.WithMaxExportBatchSize(95)),
 			// see https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#TraceIDRatioBased
 			tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.TraceIDRatioBased(fraction))),
 			tracesdk.WithResource(resource.NewWithAttributes(

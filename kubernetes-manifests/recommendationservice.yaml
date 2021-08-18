@@ -48,6 +48,8 @@ spec:
           value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice:3550"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_SPLIT_OVERSIZED_BATCHES
+          value: "true"
         # - name: DISABLE_TRACING
         #   value: "1"
         - name: JAEGER_AGENT_HOST

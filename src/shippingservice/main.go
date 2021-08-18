@@ -130,7 +130,7 @@ func createTracerProvider(log logrus.FieldLogger) (*tracesdk.TracerProvider, err
 	log.Info("created jaeger exporter to collector at " + svcAddr)
 
 	tp := tracesdk.NewTracerProvider(
-		tracesdk.WithBatcher(exporter),
+		tracesdk.WithBatcher(exporter, tracesdk.WithMaxExportBatchSize(95)),
 		// see https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#ParentBased
 		tracesdk.WithSampler(tracesdk.ParentBased(tracesdk.AlwaysSample())),
 		tracesdk.WithResource(resource.NewWithAttributes(
