@@ -68,7 +68,7 @@ spec:
           #   value: "aws"
           # - name: DISABLE_TRACING
           #   value: "1"
-          # # if sampling fraction can't be converted to float64, frontend will crash!
+          # # if sampling fraction can't be converted to float64, frontend won't start!
           # - name: TRACES_SAMPLING_FRACTION
           #   value: "0.1"
           # - name: JAEGER_SERVICE_ADDR
@@ -88,7 +88,7 @@ spec:
               cpu: 100m
               memory: 64Mi
             limits:
-              cpu: 200m
+              cpu: 1000m
               memory: 128Mi
 ---
 apiVersion: v1

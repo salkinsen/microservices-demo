@@ -48,7 +48,9 @@ spec:
         - name: FRONTEND_ADDR
           value: "frontend:80"
         - name: USERS
-          value: "100"
+          value: "600"
+        - name: SPAWN_RATE
+          value: "10"
         # - name: WAIT_TIME_CONSTANT
         #   value: "1"
         # - name: WAIT_TIME_INTERVAL_MIN
