@@ -11,22 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: loadgenerator
+  name: cartservice
 spec:
   selector:
     matchLabels:
-      app: loadgenerator
-  replicas: 1
+      app: cartservice
   template:
     metadata:
       labels:
-        app: loadgenerator
+        app: cartservice
         layer: ms-shop-observed
-      annotations:
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
       serviceAccountName: default
       affinity:
@@ -35,32 +33,45 @@ spec:
             nodeSelectorTerms:
             - matchExpressions:
               - key: layer
-                operator: In
+                operator: NotIn
                 values:
                 - meta-monitoring
+                - observability
       terminationGracePeriodSeconds: 5
-      restartPolicy: Always
       containers:
-      - name: loadgenerator
-        image: salkinsen/loadgenerator
+      - name: ms-cartservice
+        image: salkinsen/cartservice
         imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 7070
         env:
-        - name: FRONTEND_ADDR
-          value: "frontend:80"
-        - name: USERS
-          value: "600"
-        - name: SPAWN_RATE
-          value: "10"
-        # - name: WAIT_TIME_CONSTANT
-        #   value: "1"
-        # - name: WAIT_TIME_INTERVAL_MIN
-        #   value: "30"
-        # - name: WAIT_TIME_INTERVAL_MAX
-        #   value: "40"
-        # resources:
-        #   requests:
-        #     cpu: 300m
-        #     memory: 256Mi
-        #   limits:
-        #     cpu: 500m
-        #     memory: 512Mi
+        - name: REDIS_ADDR
+          value: "redis-cart:6379"
+        - name: JAEGER_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: JAEGER_SERVICE_ADDR
+          value: "$(JAEGER_AGENT_HOST):6831"
+        - name: DISABLE_TRACING
+          value: "1"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 64Mi
+          limits:
+            cpu: 400m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cartservice
+spec:
+  type: ClusterIP
+  selector:
+    app: cartservice
+  ports:
+  - name: grpc
+    port: 7070
+    targetPort: 7070
