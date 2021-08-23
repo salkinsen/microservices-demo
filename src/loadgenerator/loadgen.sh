@@ -33,4 +33,4 @@ fi
 
 
 # else, run loadgen
-env WAIT_TIME_CONSTANT=$WAIT_TIME_CONSTANT env WAIT_TIME_INTERVAL_MIN=$WAIT_TIME_INTERVAL_MIN env WAIT_TIME_INTERVAL_MAX=$WAIT_TIME_INTERVAL_MAX locust --host="http://${FRONTEND_ADDR}" --headless -u "${USERS:-10}" -r "${SPAWN_RATE:-10}" 2>&1
+locust --host="http://${FRONTEND_ADDR}" --headless -u "${USERS:-10}" -r "${SPAWN_RATE:-10}" --csv=loadgen --csv-full-history 2>&1

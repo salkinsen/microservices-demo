@@ -16,6 +16,9 @@
 
 import random
 from locust import HttpUser, TaskSet, between, SequentialTaskSet, constant, constant_pacing
+import locust.stats
+
+locust.stats.CSV_STATS_INTERVAL_SEC = 5 # default is 1 second
 
 products = [
     '0PUK6V6EV0',

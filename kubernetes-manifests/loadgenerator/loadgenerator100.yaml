@@ -51,12 +51,6 @@ spec:
           value: "500"
         - name: SPAWN_RATE
           value: "10"
-        # - name: WAIT_TIME_CONSTANT
-        #   value: "1"
-        # - name: WAIT_TIME_INTERVAL_MIN
-        #   value: "30"
-        # - name: WAIT_TIME_INTERVAL_MAX
-        #   value: "40"
         # resources:
         #   requests:
         #     cpu: 300m
