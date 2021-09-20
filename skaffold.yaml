@@ -49,18 +49,18 @@ build:
 deploy:
   kubectl:
     manifests:
-    - ./kubernetes-manifests/emailservice.yaml
-    - ./kubernetes-manifests/productcatalogservice.yaml
-    - ./kubernetes-manifests/recommendationservice.yaml
-    - ./kubernetes-manifests/shippingservice.yaml
-    - ./kubernetes-manifests/checkoutservice.yaml
-    - ./kubernetes-manifests/paymentservice.yaml
-    - ./kubernetes-manifests/currencyservice.yaml
-    - ./kubernetes-manifests/cartservice.yaml
-    - ./kubernetes-manifests/frontend.yaml
-    - ./kubernetes-manifests/loadgenerator.yaml
-    - ./kubernetes-manifests/adservice.yaml
-    - ./kubernetes-manifests/redis.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/emailservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/productcatalogservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/recommendationservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/shippingservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/checkoutservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/paymentservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/currencyservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/cartservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/frontend.yaml
+    - ./kubernetes-manifests/loadgenerator/loadgenerator100.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/adservice.yaml
+    - ./kubernetes-manifests/microservices-no-tracing/redis.yaml
 profiles:
 # "gcb" profile allows building and pushing the images
 # on Google Container Builder without requiring docker
