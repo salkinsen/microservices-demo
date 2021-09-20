@@ -8,7 +8,7 @@ cleanup()
 {
     for i in "${deployedServices[@]}"
     do
-        kubectl delete -f ./kubernetes-manifests/$i.yaml 
+        kubectl delete -f ../kubernetes-manifests/microservices-no-tracing/$i.yaml 
     done
 }
 
@@ -17,7 +17,7 @@ if [[ $? -ne 0  ]]; then services+=("redis"); fi
 
 for i in "${services[@]}"
 do
-    kubectl apply -f ./kubernetes-manifests/$i.yaml
+    kubectl apply -f ../kubernetes-manifests/microservices-no-tracing/$i.yaml 
     deployedServices+=("$i")
 
     if [ $? -ne 0 ]; then

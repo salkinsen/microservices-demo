@@ -3,12 +3,9 @@
 
 . ./shared.sh
 
-# echo "skipServices = ${skipServices[@]}"
-# echo "services = ${services[@]}"
-
 for i in "${services[@]}"
 do
-	docker build ./src/$i/ -t salkinsen/$i || docker build ./src/$i/src/ -t salkinsen/$i
+	docker build ../src/$i/ -t salkinsen/$i || docker build ../src/$i/src/ -t salkinsen/$i
     if [ $? -ne 0 ]; then
         failedToBuild+=("$i")
     fi

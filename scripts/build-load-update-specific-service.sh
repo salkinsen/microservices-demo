@@ -4,7 +4,7 @@
 
 ms=${1:?Please specify the microservice}
 
-docker build ./src/$ms/ -t salkinsen/$ms || docker build ./src/$ms/src/ -t salkinsen/$ms
+docker build ../src/$ms/ -t salkinsen/$ms || docker build ../src/$ms/src/ -t salkinsen/$ms
 if [ $? -ne 0 ]; then
     echo "docker image could not be build, aborting ..."
     exit 1
@@ -16,12 +16,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# kubectl rollout restart -f kubernetes-manifests/$ms.yaml
-
-kubectl delete -f kubernetes-manifests/$ms.yaml
+kubectl delete -f ../kubernetes-manifests/microservices-no-tracing/$ms.yaml
 if [ $? -ne 0 ]; then
     echo "could not delete $ms, aborting ..."
     exit 1
 fi
 
-kubectl apply -f kubernetes-manifests/$ms.yaml
+kubectl apply -f ../kubernetes-manifests/microservices-no-tracing/$ms.yaml

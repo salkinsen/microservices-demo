@@ -1,6 +1,8 @@
 #!/bin/bash
 
-services=( adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice)
+# this is a helper script that is used by the other scripts in this folder
+
+services=( adservice cartservice checkoutservice currencyservice emailservice frontend paymentservice productcatalogservice recommendationservice shippingservice)
 
 
 # exits if elem is not found in array
